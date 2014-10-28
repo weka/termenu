@@ -1,6 +1,6 @@
 import os
 import sys
-import termenu
+from menu import AppMenu
 
 """
 This example shows how to implement a file browser using multi-level menus
@@ -52,19 +52,35 @@ def list_files():
         entries = ["../"] + entries
     return entries
 
+
 def main():
-    redirectedStdin, redirectedStdout = termenu.redirect_std()
-    while True:
-        selected = termenu.Termenu(list_files(), plugins=[termenu.FilterPlugin(), FilePlugin()]).show()
-        if selected:
-            if len(selected) == 1 and os.path.isdir(selected[0]):
-                os.chdir(selected[0])
-            else:
-                for file in selected:
-                    print >>redirectedStdout, os.path.abspath(file)
-                return
-        else:
-            return
+    from pathlib import Path
+    def select_file(path):
+        AppMenu.show_menu(str(path), path)
+
+    def go():
+        def back():
+            print "Going back."
+            AppMenu.back()
+
+        def there():
+            ret = AppMenu.show_menu("Where's there?",
+                "Spain France Albania".split() + [("Quit", AppMenu.quit)],
+                multiselect=True, back_on_abort=True)
+            print ret
+            return ret
+
+        return AppMenu.show_menu("Go Where?", [
+            ("YELLOW<<Back>>", back),
+            ("GREEN<<There>>", there)
+        ])
+
+    return AppMenu.show_menu("Make your MAGENTA<<decision>>", [
+        ("RED<<Leave>>", leave),
+        ("BLUE<<Go>>", go)
+    ])
+    
+
 
 if __name__ == "__main__":
     main()

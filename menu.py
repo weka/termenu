@@ -2,7 +2,7 @@ import time
 import functools
 import termenu
 from contextlib import contextmanager
-from . import ansi
+import ansi
 from colors import Colorized
 
 #===============================================================================

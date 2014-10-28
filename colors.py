@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 
 import re
-from . import ansi
+import ansi
 
 
-stylifiers_cache = {}
+colorizers_cache = {}
 
 
 _RE_COLOR_SPEC = re.compile(
@@ -31,7 +31,7 @@ _RE_COLORING = re.compile(
 def get_colorizer(name):
     name = name.lower()
     try:
-        return stylifiers_cache[name]
+        return colorizers_cache[name]
     except KeyError:
         pass
 
@@ -46,7 +46,7 @@ def get_colorizer(name):
 
 
 def add_colorizer(name, colorizer):
-    stylifiers_cache[name.lower()] = colorizer
+    colorizers_cache[name.lower()] = colorizer
     return colorizer
 
 
@@ -78,9 +78,9 @@ class Colorized(str):
                 yield self.copy(c)
 
     class ColoredToken(Token):
-        def __new__(cls, text, stylifier_name):
+        def __new__(cls, text, colorizer_name):
             self = str.__new__(cls, text)
-            self.__name = stylifier_name
+            self.__name = colorizer_name
             return self
         def __str__(self):
             return get_colorizer(self.__name)(str.__str__(self))

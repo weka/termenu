@@ -82,7 +82,7 @@ class Termenu(object):
                 self.text, self.result = option
             else:
                 self.text = self.result = option
-            if not isinstance(self.text, basestring):
+            if not isinstance(self.text, str):
                 self.text = str(self.text)
             self.selected = False
             self.attrs = attrs

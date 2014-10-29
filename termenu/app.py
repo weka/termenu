@@ -409,7 +409,7 @@ class AppMenu(object):
         else:
             to_submenu = lambda action: (action.__doc__ or action.__name__, functools.partial(action, selected))
             actions = [action if callable(action) else getattr(self, action) for action in actions]
-            ret = self.show_menu(title=self.get_selection_title(selected), options=map(to_submenu, actions))
+            ret = self.show(title=self.get_selection_title(selected), options=map(to_submenu, actions))
 
         if ret is not None:
             self.result(ret)
@@ -442,115 +442,16 @@ class AppMenu(object):
         raise cls.QuitSignal()
 
     @staticmethod
-    def show_menu(title, options, default=None, back_on_abort=True, **kwargs):
+    def show(title, options, default=None, back_on_abort=True, **kwargs):
         kwargs.update(title=title, items=options, default=default, back_on_abort=back_on_abort)
         menu = type("AdHocMenu", (AppMenu,), kwargs)()
         return menu.return_value
 
 
-
-
-def test1():
-
-    class TopMenu(AppMenu):
-        title = staticmethod(lambda: "YELLOW<<%s>>" % time.ctime())
-        timeout = 15
-        submenus = ["Letters", "Numbers", "Submenu", "Foo", "Bar"]
-
-        class Letters(AppMenu):
-            title = "CYAN(BLUE)<<Letters>>"
-            option_name = "BLUE<<Letters>>"
-            multiselect = True
-            items = [chr(i) for i in xrange(65, 91)]
-            def action(self, letters):
-                raw_input("Selected: %s" % "".join(letters))
-
-        class Numbers(AppMenu):
-            multiselect = True
-            @property
-            def items(self):
-                return range(int(time.time()*2) % 10, 50)
-            def get_selection_actions(self, selection):
-                yield "MinMax"
-                yield "Add"
-                if min(selection) > 0:
-                    yield "Multiply"
-                yield "Quit"
-            def get_selection_title(self, selection):
-                return ", ".join(map(str, sorted(selection)))
-            def MinMax(self, numbers):
-                "Min/Max"
-                raw_input("Min: %s, Max: %s" % (min(numbers), max(numbers)))
-                self.retry()
-            def Add(self, numbers):
-                raw_input("Sum: %s" % sum(numbers))
-                self.back()
-            def Multiply(self, numbers):
-                raw_input("Mult: %s" % reduce((lambda a, b: a*b), numbers))
-            def Quit(self, numbers):
-                raw_input("%s" % numbers)
-                self.quit()
-
-
-        class Submenu(AppMenu):
-            submenus = ["Letter", "Number"]
-
-            class Letter(AppMenu):
-                @property
-                def items(self):
-                    return [chr(i) for i in xrange(65, 91)][int(time.time()*2) % 10:][:10]
-                def action(self, letter):
-                    raw_input("Selected: %s" % letter)
-                    self.back()
-
-            class Number(AppMenu):
-                items = range(50)
-                def action(self, number):
-                    raw_input("Sum: %s" % number)
-
-        def Foo(self):
-            raw_input("Foo?")
-
-        def Bar(object):
-            raw_input("Bar! ")
-        Bar.get_option_name = lambda: "Dynamic option name: (%s)" % (int(time.time()) % 20)
-
-    TopMenu()
-
-
-def test2():
-
-    def leave():
-        print "Leave..."
-        AppMenu.quit()
-
-    def go():
-        def back():
-            print "Going back."
-            AppMenu.back()
-
-        def there():
-            ret = AppMenu.show_menu("Where's there?",
-                "Spain France Albania".split() + [("Quit", AppMenu.quit)],
-                multiselect=True, back_on_abort=True)
-            print ret
-            return ret
-
-        return AppMenu.show_menu("Go Where?", [
-            ("YELLOW<<Back>>", back),
-            ("GREEN<<There>>", there)
-        ])
-
-    return AppMenu.show_menu("Make your MAGENTA<<decision>>", [
-        ("RED<<Leave>>", leave),
-        ("BLUE<<Go>>", go)
-    ])
-
-
 if __name__ == '__main__':
     import pdb
     try:
-        ret = AppMenu.show_menu("AppMenu", [
+        ret = AppMenu.show("AppMenu", [
             ("Debug", pdb.set_trace),
             ("Test1", test1),
             ("Test2", test2)

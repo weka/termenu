@@ -1,6 +1,8 @@
+from __future__ import print_function
+
 import sys
-import ansi
-from version import version
+from .version import version
+from . import keyboard, ansi
 
 def show_menu(title, options, default=None, height=None, width=None, multiselect=False, precolored=False):
     """
@@ -112,7 +114,6 @@ class Termenu(object):
 
     @pluggable
     def show(self):
-        import keyboard
         self._print_menu()
         ansi.save_position()
         ansi.hide_cursor()
@@ -508,7 +509,6 @@ class Minimenu(object):
             self.cursor = 0
 
     def show(self):
-        import keyboard
         ansi.hide_cursor()
         self._print_menu(rewind=False)
         try:

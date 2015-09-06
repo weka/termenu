@@ -2,19 +2,19 @@ import time
 from termenu.app import AppMenu
 
 def leave():
-    print "Leave..."
+    print("Leave...")
     AppMenu.quit()
 
 def go():
     def back():
-        print "Going back."
+        print("Going back.")
         AppMenu.back()
 
     def there():
         ret = AppMenu.show("Where's there?",
             "Spain France Albania".split() + [("Quit", AppMenu.quit)],
             multiselect=True, back_on_abort=True)
-        print ret
+        print(ret)
         return ret
 
     return AppMenu.show("Go Where?", [

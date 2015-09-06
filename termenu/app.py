@@ -1,9 +1,10 @@
 import time
 import functools
-import termenu
+from . import termenu
 from contextlib import contextmanager
-import ansi
-from colors import Colorized
+from . import ansi
+from .colors import Colorized
+import collections
 
 #===============================================================================
 # Termenu
@@ -109,7 +110,7 @@ class TermenuAdapter(termenu.Termenu):
                 break
         else:
             return
-        for i in xrange(index):
+        for i in range(index):
             self._on_down()
 
     def _adjust_width(self, option):
@@ -182,7 +183,7 @@ class TermenuAdapter(termenu.Termenu):
     def _print_menu(self):
         ansi.write("\r%s\n" % self.title)
         super(TermenuAdapter, self)._print_menu()
-        for _ in xrange(0, self.height - len(self.options)):
+        for _ in range(0, self.height - len(self.options)):
             termenu.ansi.clear_eol()
             termenu.ansi.write("\n")
         self._print_footer()
@@ -204,7 +205,7 @@ class TermenuAdapter(termenu.Termenu):
         termenu.ansi.restore_position()
         height = self.get_total_height()
         if clear:
-            for i in xrange(height):
+            for i in range(height):
                 termenu.ansi.clear_eol()
                 termenu.ansi.up()
             termenu.ansi.clear_eol()
@@ -240,7 +241,7 @@ class ParamsException(Exception):
         if args:
             message %= args
         self.message = message
-        for k, v in kwargs.iteritems():
+        for k, v in kwargs.items():
             setattr(self, k, v)
         self.params = kwargs
 
@@ -269,7 +270,7 @@ class AppMenu(object):
 
     @property
     def height(self):
-        return termenu.get_terminal_size()[1] / 2
+        return termenu.get_terminal_size()[1] // 2
 
     @property
     def items(self):
@@ -282,7 +283,7 @@ class AppMenu(object):
 
         # convert named submenus to submenu objects (functions/classes)
         submenus = (
-            getattr(self, name) if isinstance(name, basestring) else name
+            getattr(self, name) if isinstance(name, str) else name
             for name in self.submenus
         )
 
@@ -328,9 +329,9 @@ class AppMenu(object):
             while True:
                 if refresh:
                     title = self.title
-                    titles = [t() if callable(t) else t for t in self._all_titles + [title]]
+                    titles = [t() if isinstance(t, collections.Callable) else t for t in self._all_titles + [title]]
                     banner = self.banner
-                    if callable(banner):
+                    if isinstance(banner, collections.Callable):
                         banner = banner()
 
                     menu.reset(
@@ -359,13 +360,13 @@ class AppMenu(object):
                 self._all_titles.append(title)
                 try:
                     self.on_selected(selected)
-                except self.RetrySignal, e:
+                except self.RetrySignal as e:
                     refresh = e.refresh  # will refresh by default unless told differently
                     continue
                 except (KeyboardInterrupt):
                     refresh = False  # show the same menu
                     continue
-                except self.BackSignal, e:
+                except self.BackSignal as e:
                     if e.levels:
                         e.levels -= 1
                         raise
@@ -380,7 +381,7 @@ class AppMenu(object):
             if self.parent:
                 raise
 
-        except self.ReturnSignal, e:
+        except self.ReturnSignal as e:
             self.return_value = e.value
 
     def action(self, selected):
@@ -389,14 +390,14 @@ class AppMenu(object):
                 # we don't want the instance of the class to be returned
                 # as the a result from the menu. (See 'HitMe' class below)
                 item, _ = None, item()
-            if callable(item):
+            if isinstance(item, collections.Callable):
                 item = item()
             if isinstance(item, self._MenuSignal):
                 raise item
             if isinstance(item, AppMenu):
                 return
             return item
-        return map(evaluate, selected) if hasattr(selected, "__iter__") else evaluate(selected)
+        return list(map(evaluate, selected)) if hasattr(selected, "__iter__") else evaluate(selected)
 
     def on_selected(self, selected):
         if not selected:
@@ -408,8 +409,8 @@ class AppMenu(object):
             ret = self.action(selected)
         else:
             to_submenu = lambda action: (action.__doc__ or action.__name__, functools.partial(action, selected))
-            actions = [action if callable(action) else getattr(self, action) for action in actions]
-            ret = self.show(title=self.get_selection_title(selected), options=map(to_submenu, actions))
+            actions = [action if isinstance(action, collections.Callable) else getattr(self, action) for action in actions]
+            ret = self.show(title=self.get_selection_title(selected), options=list(map(to_submenu, actions)))
 
         if ret is not None:
             self.result(ret)
@@ -446,18 +447,3 @@ class AppMenu(object):
         kwargs.update(title=title, items=options, default=default, back_on_abort=back_on_abort)
         menu = type("AdHocMenu", (AppMenu,), kwargs)()
         return menu.return_value
-
-
-if __name__ == '__main__':
-    import pdb
-    try:
-        ret = AppMenu.show("AppMenu", [
-            ("Debug", pdb.set_trace),
-            ("Test1", test1),
-            ("Test2", test2)
-            ],
-            timeout=5, heartbeat=1,
-        )
-        print "Result is:", ret
-    except AppMenu.TimeoutSignal:
-        print "Timed out"

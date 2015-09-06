@@ -61,7 +61,7 @@ def main():
                 os.chdir(selected[0])
             else:
                 for file in selected:
-                    print >>redirectedStdout, os.path.abspath(file)
+                    print(os.path.abspath(file), file=redirectedStdout)
                 return
         else:
             return

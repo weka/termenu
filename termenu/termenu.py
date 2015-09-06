@@ -358,6 +358,8 @@ class FilterPlugin(Plugin):
             ansi.hide_cursor()
             prevent = True
             self._refilter()
+        elif not self.host.options and key == "space":
+            prevent = True
 
         if not prevent:
             return self.parent._on_key(key)
@@ -383,6 +385,7 @@ class FilterPlugin(Plugin):
                 self.host.options.append(option)
         # select the first matching element (showAlways elements might not match)
         self.host.scroll = 0
+        self.host.cursor = 0
         for i, option in enumerate(self.host.options):
             if not option.attrs.get("showAlways") and text in option.text.lower():
                 self.host.cursor = i

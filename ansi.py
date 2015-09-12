@@ -11,7 +11,7 @@ def write(s):
         while True:
             try:
                 func(*args)
-            except IOError, e:
+            except IOError as e:
                 if e.errno != errno.EAGAIN:
                     raise
             else:
@@ -106,7 +106,7 @@ class ansistr(str):
 
 if __name__ == "__main__":
     # Print all colors
-    colors = [name for name, color in sorted(COLORS.items(), key=lambda v: v[1])]
+    colors = [name for name, color in sorted(list(COLORS.items()), key=lambda v: v[1])]
     for bright in [False, True]:
         for background in colors:
             for color in colors:

@@ -571,16 +571,16 @@ def redirect_std():
     stdin = sys.stdin
     stdout = sys.stdout
     if not sys.stdin.isatty():
-        sys.stdin = open("/dev/tty", "r", 0)
+        sys.stdin = open("/dev/tty", "rb", 0)
     if not sys.stdout.isatty():
-        sys.stdout = open("/dev/tty", "w", 0)
+        sys.stdout = open("/dev/tty", "wb", 0)
     return stdin, stdout
 
 
 def shorten(s, l=100):
     if len(s) <= l or l < 3:
         return s
-    return s[:l/2-2] + "..." + s[-l/2+1:]
+    return s[:l//2-2] + "..." + s[-l//2+1:]
 
 
 try:

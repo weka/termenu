@@ -169,12 +169,14 @@ class Colorized(str):
 
     def __getitem__(self, idx):
         if isinstance(idx, slice) and idx.step is None:
+            start = idx.start or 0
+            stop = idx.stop or len(self)
             cursor = 0
             tokens = []
             for token in self.tokens:
-                tokens.append(token[max(0, idx.start - cursor):idx.stop - cursor])
+                tokens.append(token[max(0, start - cursor):stop - cursor])
                 cursor += len(token)
-                if cursor > idx.stop:
+                if cursor > stop:
                     break
             return self.__class__("".join(t.raw() for t in tokens if t))
 

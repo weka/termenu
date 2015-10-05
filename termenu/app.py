@@ -333,11 +333,14 @@ class AppMenu(object):
                     banner = self.banner
                     if isinstance(banner, collections.Callable):
                         banner = banner()
+                    options = list(self.items)
+                    if not options:
+                        return self.result(None)
 
                     menu.reset(
                         title=" DARK_GRAY@{>>}@ ".join(titles),
                         header=banner,
-                        options=self.items,
+                        options=options,
                         height=self.height,
                         multiselect=self.multiselect,
                         heartbeat=self.heartbeat or (1 if self.timeout else None),

@@ -10,7 +10,14 @@ except NameError:
 class TopMenu(AppMenu):
     title = staticmethod(lambda: "YELLOW<<%s>>" % time.ctime())
     timeout = 15
-    submenus = ["Letters", "Numbers", "Submenu", "Foo", "Bar"]
+    submenus = ["Empty", "Letters", "Numbers", "Submenu", "Foo", "Bar"]
+
+    class Empty(AppMenu):
+        title = "CYAN(BLUE)<<Empty>>"
+        option_name = "BLUE<<Empty>>"
+        items = []
+        def action(self, letters):
+            input("Selected: %s" % "".join(letters))
 
     class Letters(AppMenu):
         title = "CYAN(BLUE)<<Letters>>"

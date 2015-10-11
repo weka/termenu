@@ -6,15 +6,25 @@ from . import ansi
 from .colors import Colorized
 import collections
 
-#===============================================================================
+
+class ParamsException(Exception):
+    "An exception object that accepts arbitrary params as attributes"
+    def __init__(self, message="", *args, **kwargs):
+        if args:
+            message %= args
+        self.message = message
+        for k, v in kwargs.items():
+            setattr(self, k, v)
+        self.params = kwargs
+
+
+# ===============================================================================
 # Termenu
-#===============================================================================
-
-
+# ===============================================================================
 class TermenuAdapter(termenu.Termenu):
 
-    class RefreshSignal(Exception):  pass
-    class TimeoutSignal(Exception):  pass
+    class RefreshSignal(ParamsException):  pass
+    class TimeoutSignal(ParamsException):  pass
 
     FILTER_SEPARATOR = ","
     EMPTY = "DARK_RED<< (Empty) >>"
@@ -33,7 +43,8 @@ class TermenuAdapter(termenu.Termenu):
         self.dirty = False
         self.timeout = (time.time() + timeout) if timeout else None
 
-    def reset(self, title="No Title", header="", *args, **kwargs):
+    def reset(self, title="No Title", header="", selection=None, *args, **kwargs):
+        self._highlighted = False
         remains = self.timeout and (self.timeout - time.time())
         if remains:
             fmt = "(%s<<%ds left>>)"
@@ -48,7 +59,7 @@ class TermenuAdapter(termenu.Termenu):
             title += "\n" + header
         self.title = Colorized(title)
         self.title_height = len(title.splitlines())
-        with self._selection_preserved():
+        with self._selection_preserved(selection):
             super(TermenuAdapter, self).__init__(*args, **kwargs)
 
     def _make_option_objects(self, options):
@@ -56,9 +67,15 @@ class TermenuAdapter(termenu.Termenu):
         self._allOptions = options[:]
         return options
 
+    def _decorate_flags(self, index):
+        flags = super()._decorate_flags(index)
+        flags['highlighted'] = self._highlighted and flags['selected']
+        return flags
+
     def _decorate(self, option, **flags):
         "Decorate the option to be displayed"
 
+        highlighted = flags.get("highlighted", True)
         active = flags.get("active", False)
         selected = flags.get("selected", False)
         moreAbove = flags.get("moreAbove", False)
@@ -66,9 +83,10 @@ class TermenuAdapter(termenu.Termenu):
 
         # add selection / cursor decorations
         option = Colorized(("WHITE<<*>> " if selected else "  ") + ("WHITE@{>}@" if active else " ") + option)
-        option = str(option)  # convert from Colorized to ansi string
-        if active:
-            option = ansi.highlight(option, "black")
+        if highlighted:
+            option = ansi.colorize(option.uncolored, "cyan", bright=True)
+        else:
+            option = str(option)  # convert from Colorized to ansi string
 
         # add more above/below indicators
         if moreAbove:
@@ -81,13 +99,13 @@ class TermenuAdapter(termenu.Termenu):
         return option
 
     @contextmanager
-    def _selection_preserved(self):
+    def _selection_preserved(self, selection=None):
         if self.is_empty:
             yield
             return
 
         prev_active = self._get_active_option().result
-        prev_selected = set(o.result for o in self.options if o.selected)
+        prev_selected = set(o.result for o in self.options if o.selected) if selection is None else set(selection)
         try:
             yield
         finally:
@@ -124,21 +142,29 @@ class TermenuAdapter(termenu.Termenu):
         return option
 
     def _on_key(self, key):
-        prevent = False
+        bubble_up = True
         if not key == "heartbeat":
             self.timeout = None
+        if key == "space":
+            key = " "
+        elif key == "`":
+            key = "insert"
 
         if key == "*" and self.multiselect:
             for option in self.options:
-                if not option.attrs.get("header"):
+                if option.attrs.get("selectable", True) and not option.attrs.get("header"):
                     option.selected = not option.selected
-        elif len(key) == 1 and 32 < ord(key) <= 127:
-            if not self.text:
-                self.text = []
-            self.text.append(key)
-            self._refilter()
+        elif len(key) == 1 and 32 <= ord(key) <= 127:
+            if key == " " and not self.text:
+                pass
+            else:
+                if not self.text:
+                    self.text = []
+                self.text.append(key)
+                self._refilter()
+            bubble_up = False
         elif self.is_empty and key == "enter":
-            prevent = True
+            bubble_up = False
         elif self.text and key == "backspace":
             del self.text[-1]
             self._refilter()
@@ -148,31 +174,45 @@ class TermenuAdapter(termenu.Termenu):
                 filters.pop(-1)
             self.text = list(self.FILTER_SEPARATOR.join(filters)) if filters else None
             termenu.ansi.hide_cursor()
-            prevent = True
+            bubble_up = False
             self._refilter()
         elif key == "end":
             self._on_end()
-            prevent = True
+            bubble_up = False
         elif key == "F5":
-            self.refresh()
+            self.refresh('user')
 
-        if not prevent:
+        if bubble_up:
             return super(TermenuAdapter, self)._on_key(key)
+
+    def _on_enter(self):
+        if any(option.selected for option in self.options):
+            self._highlighted = True
+            self._goto_top()
+            self._print_menu()
+            time.sleep(.1)
+        return True # stop loop
+
+    def _on_insert(self):
+        option = self._get_active_option()
+        if not option.attrs.get("selectable", True):
+            return
+        super()._on_space()
 
     def _on_end(self):
         height = min(self.height, len(self.options))
         self.scroll = len(self.options) - height
         self.cursor = height - 1
 
-    def refresh(self):
+    def refresh(self, source):
         if self.timeout:
             now = time.time()
             if now > self.timeout:
                 raise self.TimeoutSignal()
-        raise self.RefreshSignal()
+        raise self.RefreshSignal(source=source)
 
     def _on_heartbeat(self):
-        self.refresh()
+        self.refresh("heartbeat")
 
     def _print_footer(self):
         if self.text is not None:
@@ -235,15 +275,11 @@ class TermenuAdapter(termenu.Termenu):
                 self.is_empty = True
                 self.options.append(self._Option(" (No match for RED<<%s>>)" % " , ".join(map(repr,texts))))
 
-class ParamsException(Exception):
-    "An exception object that accepts arbitrary params as attributes"
-    def __init__(self, message="", *args, **kwargs):
-        if args:
-            message %= args
-        self.message = message
-        for k, v in kwargs.items():
-            setattr(self, k, v)
-        self.params = kwargs
+
+def _get_option_name(sub):
+    if hasattr(sub, "get_option_name"):
+        return sub.get_option_name()
+    return sub.__doc__ or sub.__name__
 
 
 class AppMenu(object):
@@ -275,12 +311,6 @@ class AppMenu(object):
     @property
     def items(self):
 
-        get_option_name = lambda sub: (
-            sub.get_option_name()
-            if hasattr(sub, "get_option_name")
-            else (sub.__doc__ or sub.__name__)
-        )
-
         # convert named submenus to submenu objects (functions/classes)
         submenus = (
             getattr(self, name) if isinstance(name, str) else name
@@ -288,7 +318,7 @@ class AppMenu(object):
         )
 
         return [
-            sub if isinstance(sub, tuple) else (get_option_name(sub), sub)
+            sub if isinstance(sub, tuple) else (_get_option_name(sub), sub)
             for sub in submenus
         ]
 
@@ -322,12 +352,13 @@ class AppMenu(object):
         # use the default only on the first iteration
         # after that we'll default to the the last selection
         menu = TermenuAdapter(timeout=self.timeout)
-        refresh = True
+        self.refresh = "first"
+        selection = None
         default = self.default
 
         try:
             while True:
-                if refresh:
+                if self.refresh:
                     title = self.title
                     titles = [t() if isinstance(t, collections.Callable) else t for t in self._all_titles + [title]]
                     banner = self.banner
@@ -345,17 +376,19 @@ class AppMenu(object):
                         multiselect=self.multiselect,
                         heartbeat=self.heartbeat or (1 if self.timeout else None),
                         width=self.width,
+                        selection=selection,
                     )
                 else:
                     # next time we must refresh
-                    refresh = True
+                    self.refresh = "second"
 
                 try:
                     selected = menu.show(default=default)
                     default = None  # default selection only on first show
                 except KeyboardInterrupt:
                     self.quit()
-                except menu.RefreshSignal:
+                except menu.RefreshSignal as e:
+                    self.refresh = e.source
                     continue
                 except menu.TimeoutSignal:
                     raise self.TimeoutSignal("Timed out waiting for selection")
@@ -364,19 +397,20 @@ class AppMenu(object):
                 try:
                     self.on_selected(selected)
                 except self.RetrySignal as e:
-                    refresh = e.refresh  # will refresh by default unless told differently
+                    self.refresh = e.refresh  # will refresh by default unless told differently
+                    selection = e.selection
                     continue
                 except (KeyboardInterrupt):
-                    refresh = False  # show the same menu
+                    self.refresh = False  # show the same menu
                     continue
                 except self.BackSignal as e:
                     if e.levels:
                         e.levels -= 1
                         raise
-                    refresh = e.refresh
+                    self.refresh = e.refresh
                     continue
                 else:
-                    refresh = True   # refresh the menu
+                    self.refresh = "second"   # refresh the menu
                 finally:
                     self._all_titles.pop(-1)
 
@@ -411,7 +445,7 @@ class AppMenu(object):
         if actions is None:
             ret = self.action(selected)
         else:
-            to_submenu = lambda action: (action.__doc__ or action.__name__, functools.partial(action, selected))
+            to_submenu = lambda action: (_get_option_name(action), functools.partial(action, selected))
             actions = [action if isinstance(action, collections.Callable) else getattr(self, action) for action in actions]
             ret = self.show(title=self.get_selection_title(selected), options=list(map(to_submenu, actions)))
 
@@ -426,9 +460,9 @@ class AppMenu(object):
         return "Selected %s items" % len(selection)
 
     @classmethod
-    def retry(cls, refresh=True):
+    def retry(cls, refresh="app", selection=None):
         "Refresh into the current menu"
-        raise cls.RetrySignal(refresh=refresh)
+        raise cls.RetrySignal(refresh=refresh, selection=selection)
 
     @classmethod
     def back(cls, refresh=True, levels=1):
@@ -447,6 +481,8 @@ class AppMenu(object):
 
     @staticmethod
     def show(title, options, default=None, back_on_abort=True, **kwargs):
+        if callable(options):
+            options = property(options)
         kwargs.update(title=title, items=options, default=default, back_on_abort=back_on_abort)
         menu = type("AdHocMenu", (AppMenu,), kwargs)()
         return menu.return_value

@@ -84,14 +84,19 @@ class Plugin(object):
 class Termenu(object):
     class _Option(object):
         def __init__(self, option, **attrs):
+            self.selected = False
+            self.attrs = attrs
             if isinstance(option, tuple) and len(option) == 2:
                 self.text, self.result = option
+            elif isinstance(option, dict) and 'text' in option:
+                self.text = option['text']
+                self.result = option.get("result", self.text)
+                self.selected = option.get("selected", self.selected)
+                self.attrs.update(option)
             else:
                 self.text = self.result = option
             if not isinstance(self.text, str):
                 self.text = str(self.text)
-            self.selected = False
-            self.attrs = attrs
 
     def __init__(self, options, default=None, height=None, width=None, multiselect=True, heartbeat=None, plugins=None):
         for plugin in plugins or []:

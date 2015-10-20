@@ -328,7 +328,7 @@ class AppMenu(object):
         )
 
         return [
-            sub if isinstance(sub, tuple) else (_get_option_name(sub), sub)
+            sub if isinstance(sub, (dict, tuple)) else (_get_option_name(sub), sub)
             for sub in submenus
         ]
 

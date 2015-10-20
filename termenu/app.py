@@ -283,7 +283,7 @@ class TermenuAdapter(termenu.Termenu):
                     break
             else:
                 self.is_empty = True
-                self.options.append(self._Option(" (No match for RED<<%s>>)" % " , ".join(map(repr,texts))))
+                self.options.append(self._Option(" (No match for RED<<%s>>; WHITE@{<ESC>}@ to reset filter)" % " , ".join(map(repr,texts))))
 
 
 def _get_option_name(sub):

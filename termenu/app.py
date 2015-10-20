@@ -40,6 +40,10 @@ class TermenuAdapter(termenu.Termenu):
         def selectable(self):
             return self.attrs.get("selectable", True)
 
+        @property
+        def markable(self):
+            return self.attrs.get("markable", True) and self.selectable
+
     def __init__(self, timeout=None):
         self.text = None
         self.is_empty = True
@@ -155,7 +159,7 @@ class TermenuAdapter(termenu.Termenu):
 
         if key == "*" and self.multiselect:
             for option in self.options:
-                if option.selectable and not option.attrs.get("header"):
+                if option.markable:
                     option.selected = not option.selected
         elif len(key) == 1 and 32 <= ord(key) <= 127:
             if key == " " and not self.text:
@@ -200,10 +204,10 @@ class TermenuAdapter(termenu.Termenu):
 
     def _on_insert(self):
         option = self._get_active_option()
-        if not option.selectable:
-            super()._on_down()
-        else:
+        if option.markable:
             super()._on_space()
+        else:
+            super()._on_down()
 
     def _on_end(self):
         height = min(self.height, len(self.options))

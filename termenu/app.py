@@ -36,6 +36,9 @@ class TermenuAdapter(termenu.Termenu):
             self.text = Colorized(self.raw)
             if isinstance(self.result, str):
                 self.result = ansi.decolorize(self.result)
+        @property
+        def selectable(self):
+            return self.attrs.get("selectable", True)
 
     def __init__(self, timeout=None):
         self.text = None
@@ -152,7 +155,7 @@ class TermenuAdapter(termenu.Termenu):
 
         if key == "*" and self.multiselect:
             for option in self.options:
-                if option.attrs.get("selectable", True) and not option.attrs.get("header"):
+                if option.selectable and not option.attrs.get("header"):
                     option.selected = not option.selected
         elif len(key) == 1 and 32 <= ord(key) <= 127:
             if key == " " and not self.text:
@@ -191,13 +194,16 @@ class TermenuAdapter(termenu.Termenu):
             self._goto_top()
             self._print_menu()
             time.sleep(.1)
+        elif not self._get_active_option().selectable:
+            return False
         return True # stop loop
 
     def _on_insert(self):
         option = self._get_active_option()
-        if not option.attrs.get("selectable", True):
-            return
-        super()._on_space()
+        if not option.selectable:
+            super()._on_down()
+        else:
+            super()._on_space()
 
     def _on_end(self):
         height = min(self.height, len(self.options))
@@ -434,7 +440,7 @@ class AppMenu(object):
             if isinstance(item, AppMenu):
                 return
             return item
-        return list(map(evaluate, selected)) if hasattr(selected, "__iter__") else evaluate(selected)
+        return list(map(evaluate, selected)) if self.multiselect else evaluate(selected)
 
     def on_selected(self, selected):
         if not selected:

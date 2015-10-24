@@ -388,7 +388,7 @@ class AppMenu(object):
                 " * Hit WHITE@{<Enter>}@ to select",
             ]
         print(Colorized("\n".join(lines)))
-        keyboard.wait_for_keys()
+        self.wait_for_keys(prompt="(Hit any key to continue)")
 
     def _menu_loop(self):
 

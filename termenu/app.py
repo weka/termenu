@@ -1,6 +1,6 @@
 import time
 import functools
-from . import termenu
+from . import termenu, keyboard
 from contextlib import contextmanager
 from . import ansi
 from .colors import Colorized
@@ -25,6 +25,7 @@ class TermenuAdapter(termenu.Termenu):
 
     class RefreshSignal(ParamsException):  pass
     class TimeoutSignal(ParamsException):  pass
+    class HelpSignal(ParamsException): pass
 
     FILTER_SEPARATOR = ","
     EMPTY = "DARK_RED<< (Empty) >>"
@@ -186,11 +187,15 @@ class TermenuAdapter(termenu.Termenu):
         elif key == "end":
             self._on_end()
             bubble_up = False
-        elif key == "F5":
-            self.refresh('user')
 
         if bubble_up:
             return super(TermenuAdapter, self)._on_key(key)
+
+    def _on_F5(self):
+        self.refresh('user')
+
+    def _on_F1(self):
+        self.help()
 
     def _on_enter(self):
         if any(option.selected for option in self.options):
@@ -220,6 +225,9 @@ class TermenuAdapter(termenu.Termenu):
             if now > self.timeout:
                 raise self.TimeoutSignal()
         raise self.RefreshSignal(source=source)
+
+    def help(self):
+        raise self.HelpSignal()
 
     def _on_heartbeat(self):
         self.refresh("heartbeat")
@@ -357,6 +365,31 @@ class AppMenu(object):
     def banner(self):
         pass
 
+    def help(self):
+        lines = [
+            "WHITE@{Menu Usage:}@",
+            "",
+            " * Use the WHITE@{<Up/Down>}@ arrow keys to navigate the menu",
+            " * Hit WHITE@{<ESC>}@ to return to the parent menu (or exit)",
+            " * Hit WHITE@{<Ctrl-C>}@ to quit",
+            " * Hit WHITE@{<F5>}@ to refresh/redraw",
+            " * Hit WHITE@{<F1>}@ this help screen",
+            " * Use any other key to filter the current selection (WHITE@{<ESC>}@ to clear the filter)",
+            "", "",
+        ]
+        if self.multiselect:
+            lines[3:3] = [
+                " * Use WHITE@{`}@ or WHITE@{<Insert>}@ to select/deselect the currently active item",
+                " * Use WHITE@{*}@ to toggle selection on all items",
+                " * Hit WHITE@{<Enter>}@ to proceed with currently selected items, or with the active item if nothing is selected",
+            ]
+        else:
+            lines[3:3] = [
+                " * Hit WHITE@{<Enter>}@ to select",
+            ]
+        print(Colorized("\n".join(lines)))
+        keyboard.wait_for_keys()
+
     def _menu_loop(self):
 
         # use the default only on the first iteration
@@ -399,6 +432,9 @@ class AppMenu(object):
                     self.quit()
                 except menu.RefreshSignal as e:
                     self.refresh = e.source
+                    continue
+                except menu.HelpSignal:
+                    self.help()
                     continue
                 except menu.TimeoutSignal:
                     raise self.TimeoutSignal("Timed out waiting for selection")
@@ -496,3 +532,14 @@ class AppMenu(object):
         kwargs.update(title=title, items=options, default=default, back_on_abort=back_on_abort)
         menu = type("AdHocMenu", (AppMenu,), kwargs)()
         return menu.return_value
+
+    @staticmethod
+    def wait_for_keys(keys=("enter", "esc"), prompt=None):
+        if prompt:
+            print(Colorized(prompt), end=" ", flush=True)
+
+        keys = set(keys)
+        for key in keyboard.keyboard_listener():
+            if not keys or key in keys:
+                print()
+                return key

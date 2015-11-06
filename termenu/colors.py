@@ -171,6 +171,8 @@ class Colorized(str):
         if isinstance(idx, slice) and idx.step is None:
             start = idx.start or 0
             stop = idx.stop or len(self)
+            if start < 0:
+                start += stop
             cursor = 0
             tokens = []
             for token in self.tokens:

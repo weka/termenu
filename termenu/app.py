@@ -343,6 +343,7 @@ class AppMenu(object):
     submenus = []
     default = None
     multiselect = False
+    fullscreen = True
     heartbeat = None
     width = None
     actions = None
@@ -402,6 +403,9 @@ class AppMenu(object):
         try:
             while True:
                 if self.refresh:
+                    if self.fullscreen:
+                        ansi.clear_screen()
+                        ansi.home()
                     title = self.title
                     titles = [t() if isinstance(t, collections.Callable) else t for t in self._all_titles + [title]]
                     banner = self.banner

@@ -37,6 +37,9 @@ def move_horizontal(column=1):
 def move(row, column):
     write("\x1b[%d;%dH" % (row, column))
 
+def home():
+    write("\x1b[H")
+
 def clear_screen():
     write("\x1b[2J")
 

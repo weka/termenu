@@ -310,6 +310,9 @@ class AppMenu(object):
     class ReturnSignal(_MenuSignal): pass
     class TimeoutSignal(_MenuSignal): pass
 
+    # yield this to add a separator
+    SEPARATOR = dict(text="BLACK<<%s>>" % ("-"*80), result=True, selectable=False)
+
     _all_titles = []
     _all_menus = []
 
@@ -492,12 +495,18 @@ class AppMenu(object):
 
         actions = self.get_selection_actions(selected)
 
-        if actions is None:
-            ret = self.action(selected)
-        else:
+        if isinstance(actions, (list, tuple)):
             to_submenu = lambda action: (_get_option_name(action), functools.partial(action, selected))
             actions = [action if isinstance(action, collections.Callable) else getattr(self, action) for action in actions]
             ret = self.show(title=self.get_selection_title(selected), options=list(map(to_submenu, actions)))
+        else:
+            if actions is None:
+                action = self.action
+            elif isinstance(actions, str):
+                action = getattr(self, actions)
+            else:
+                action = actions
+            ret = action(selected)
 
         if ret is not None:
             self.result(ret)

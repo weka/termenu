@@ -45,11 +45,12 @@ class TermenuAdapter(termenu.Termenu):
         def markable(self):
             return self.attrs.get("markable", True) and self.selectable
 
-    def __init__(self, timeout=None):
+    def __init__(self, app):
         self.text = None
         self.is_empty = True
         self.dirty = False
-        self.timeout = (time.time() + timeout) if timeout else None
+        self.timeout = (time.time() + app.timeout) if app.timeout else None
+        self.app = app
 
     def reset(self, title="No Title", header="", selection=None, *args, **kwargs):
         self._highlighted = False
@@ -186,6 +187,9 @@ class TermenuAdapter(termenu.Termenu):
             self._refilter()
         elif key == "end":
             self._on_end()
+            bubble_up = False
+        elif callable(getattr(self.app, "on_%s" % key, None)):
+            getattr(self.app, "on_%s" % key)(self)
             bubble_up = False
 
         if bubble_up:
@@ -398,7 +402,7 @@ class AppMenu(object):
 
         # use the default only on the first iteration
         # after that we'll default to the the last selection
-        menu = TermenuAdapter(timeout=self.timeout)
+        menu = self.menu = TermenuAdapter(app=self)
         self.refresh = "first"
         selection = None
         default = self.default

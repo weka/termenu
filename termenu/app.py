@@ -494,7 +494,7 @@ class AppMenu(object):
         return list(map(evaluate, selected)) if self.multiselect else evaluate(selected)
 
     def on_selected(self, selected):
-        if not selected:
+        if selected is None:
             self.back()
 
         actions = self.get_selection_actions(selected)

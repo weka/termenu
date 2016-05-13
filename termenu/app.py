@@ -1,5 +1,6 @@
 import time
 import functools
+from textwrap import wrap
 from . import termenu, keyboard
 from contextlib import contextmanager
 from . import ansi
@@ -66,8 +67,19 @@ class TermenuAdapter(termenu.Termenu):
             title += fmt % (color, remains)
         if header:
             title += "\n" + header
-        self.title = Colorized(title)
-        self.title_height = len(title.splitlines())
+        title = Colorized(title)
+        terminal_width, _ = termenu.get_terminal_size()
+        terminal_width -= 2
+        title_lines = []
+        for line in title.splitlines():
+            while line:
+                title_lines.append(line[:terminal_width])
+                line = line[terminal_width:]
+                if line:
+                    title_lines[-1] += "DARK_RED<<\u21a9>>"
+                    line = Colorized("  DARK_RED<<\u21aa>> ") + line
+        self.title_height = len(title_lines)
+        self.title = Colorized("\n".join(title_lines))
         with self._selection_preserved(selection):
             super(TermenuAdapter, self).__init__(*args, **kwargs)
 

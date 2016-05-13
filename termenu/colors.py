@@ -91,6 +91,10 @@ class Colorized(str):
 
         def __new__(cls, text, colorizer_name):
             self = str.__new__(cls, text)
+            if ">>" in text or "<<" in text:
+                self.__p, self.__s = "@{", "}@"
+            else:
+                self.__p, self.__s = "<<", ">>"
             self.__name = colorizer_name
             return self
 
@@ -101,7 +105,7 @@ class Colorized(str):
             return self.__class__(text, self.__name)
 
         def raw(self):
-            return "%s<<%s>>" % (self.__name, str.__str__(self))
+            return "".join((self.__name, self.__p, str.__str__(self), self.__s))
 
         def __repr__(self):
             return repr(self.raw())

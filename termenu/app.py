@@ -19,6 +19,9 @@ class ParamsException(Exception):
         self.params = kwargs
 
 
+NoneType = type(None)
+
+
 # ===============================================================================
 # Termenu
 # ===============================================================================
@@ -506,7 +509,7 @@ class AppMenu(object):
         return list(map(evaluate, selected)) if self.multiselect else evaluate(selected)
 
     def on_selected(self, selected):
-        if selected is None:
+        if not selected and isinstance(selected, (NoneType, list)):
             self.back()
 
         actions = self.get_selection_actions(selected)

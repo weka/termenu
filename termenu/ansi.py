@@ -6,7 +6,7 @@ import re
 
 COLORS = dict(black=0, red=1, green=2, yellow=3, blue=4, magenta=5, cyan=6, white=7, default=9)
 
-def write(s):
+def write(text):
     def _retry(func, *args):
         while True:
             try:
@@ -16,7 +16,10 @@ def write(s):
                     raise
             else:
                 break
-    _retry(sys.stdout.write, s)
+
+    size = 1024  # to workaround an issue on OSx where the buffer is too big
+    for i in range(0, len(text), size):
+        _retry(sys.stdout.write, text[i:i+size])
     _retry(sys.stdout.flush)
 
 def up(n=1):

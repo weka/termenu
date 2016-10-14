@@ -296,7 +296,7 @@ class TermenuAdapter(termenu.Termenu):
             self._clear_cache()
             self.options = []
             texts = "".join(self.text or []).lower().split(self.FILTER_SEPARATOR)
-            pred = lambda option: all(text in option.text.lower() for text in texts)
+            pred = lambda option: all(text in uncolorize(option.text).lower() for text in texts)
             # filter the matching options
             for option in self._allOptions:
                 if option.attrs.get("showAlways") or pred(option):

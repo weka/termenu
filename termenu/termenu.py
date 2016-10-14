@@ -122,7 +122,7 @@ class Termenu(object):
             return selected if self.multiselect else selected[0]
 
     @pluggable
-    def show(self):
+    def show(self, auto_clear=True):
         self._print_menu()
         ansi.save_position()
         ansi.hide_cursor()
@@ -134,7 +134,8 @@ class Termenu(object):
                 self._goto_top()
                 self._print_menu()
         finally:
-            self._clear_menu()
+            if auto_clear:
+                self._clear_menu()
             ansi.show_cursor()
 
     @pluggable

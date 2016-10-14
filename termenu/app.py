@@ -138,11 +138,11 @@ class TermenuAdapter(termenu.Termenu):
                     option.selected = option.result in prev_selected
             self._set_default(prev_active)
 
-    def show(self, default=None):
+    def show(self, default=None, auto_clear=True):
         self._refilter()
         self._clear_cache()
         self._set_default(default)
-        return super(TermenuAdapter, self).show()
+        return super(TermenuAdapter, self).show(auto_clear=auto_clear)
 
     def _set_default(self, default):
         if default is None:
@@ -452,7 +452,7 @@ class AppMenu(object):
                     self.refresh = "second"
 
                 try:
-                    selected = menu.show(default=default)
+                    selected = menu.show(default=default, auto_clear=not self.fullscreen)
                     default = None  # default selection only on first show
                 except KeyboardInterrupt:
                     self.quit()
@@ -492,6 +492,10 @@ class AppMenu(object):
 
         except self.ReturnSignal as e:
             self.return_value = e.value
+
+        finally:
+            if self.fullscreen:
+                menu._clear_menu()
 
     def action(self, selected):
         def evaluate(item):

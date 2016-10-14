@@ -388,6 +388,9 @@ class AppMenu(object):
     def banner(self):
         pass
 
+    def update_data(self):
+        pass
+
     def help(self):
         lines = [
             "WHITE@{Menu Usage:}@",
@@ -421,10 +424,11 @@ class AppMenu(object):
         self.refresh = "first"
         selection = None
         default = self.default
-
         try:
             while True:
                 if self.refresh:
+                    self.update_data()
+
                     if self.fullscreen:
                         ansi.clear_screen()
                         ansi.home()

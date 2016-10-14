@@ -4,7 +4,7 @@ from textwrap import wrap
 from . import termenu, keyboard
 from contextlib import contextmanager
 from . import ansi
-from .colors import Colorized
+from .colors import Colorized, uncolorize
 import collections
 
 
@@ -157,7 +157,7 @@ class TermenuAdapter(termenu.Termenu):
 
     def _adjust_width(self, option):
         option = Colorized("BLACK<<\\>>").join(option.splitlines())
-        l = len(option)
+        l = len(uncolorize(str(option)))
         w = max(self.width, 8)
         if l > w:
             option = termenu.shorten(option, w)

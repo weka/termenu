@@ -67,6 +67,10 @@ def colorize_by_patterns(text, no_color=False):
     return text
 
 
+def uncolorize(text):
+    return re.sub(re.escape("\x1b") + '.+?m', "", text)
+
+
 class Colorized(str):
 
     class Token(str):

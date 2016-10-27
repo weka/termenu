@@ -30,6 +30,7 @@ class TermenuAdapter(termenu.Termenu):
     class RefreshSignal(ParamsException):  pass
     class TimeoutSignal(ParamsException):  pass
     class HelpSignal(ParamsException): pass
+    class SelectSignal(ParamsException): pass
 
     FILTER_SEPARATOR = ","
     EMPTY = "DARK_RED<< (Empty) >>"
@@ -50,6 +51,7 @@ class TermenuAdapter(termenu.Termenu):
             return self.attrs.get("markable", True) and self.selectable
 
     def __init__(self, app):
+        self.height = self.title_height = 1
         self.text = None
         self.is_empty = True
         self.dirty = False
@@ -247,6 +249,9 @@ class TermenuAdapter(termenu.Termenu):
 
     def help(self):
         raise self.HelpSignal()
+
+    def select(self, selection):
+        raise self.SelectSignal(selection=selection)
 
     def _on_heartbeat(self):
         self.refresh("heartbeat")
@@ -468,6 +473,8 @@ class AppMenu(object):
                     continue
                 except menu.TimeoutSignal:
                     raise self.TimeoutSignal("Timed out waiting for selection")
+                except menu.SelectSignal as e:
+                    selected = e.selection
 
                 self._all_titles.append(title)
                 try:

@@ -77,10 +77,13 @@ class TermenuAdapter(termenu.Termenu):
         terminal_width -= 2
         title_lines = []
         for line in title.splitlines():
-            while line:
-                title_lines.append(line[:terminal_width])
-                line = line[terminal_width:]
-                if line:
+            if len(uncolorize(line)) <= terminal_width:
+                title_lines.append(line)
+            else:
+                line = uncolorize(line)
+                while line:
+                    title_lines.append(line[:terminal_width])
+                    line = line[terminal_width:]
                     title_lines[-1] += "DARK_RED<<\u21a9>>"
                     line = Colorized("  DARK_RED<<\u21aa>> ") + line
         self.title_height = len(title_lines)

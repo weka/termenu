@@ -1,12 +1,11 @@
 
-
-
 import os
 import sys
 import fcntl
 import termios
 import select
 import errno
+import string
 
 STDIN = sys.stdin.fileno()
 
@@ -36,6 +35,9 @@ ANSI_SEQUENCES = dict(
     F11 = '\x1b[23~',
     F12 = '\x1b[24~',
 )
+
+for c in string.ascii_lowercase:
+    ANSI_SEQUENCES['ctrl_%s' % c] = chr(ord(c) - ord('a')+1)
 
 KEY_NAMES = dict((v,k) for k,v in list(ANSI_SEQUENCES.items()))
 KEY_NAMES.update({
@@ -121,4 +123,4 @@ def keyboard_listener(heartbeat=None):
 
 if __name__ == "__main__":
     for key in keyboard_listener(0.5):
-        print(key)
+        print(repr(key))

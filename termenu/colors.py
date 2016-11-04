@@ -115,6 +115,7 @@ class Colorized(str):
             return repr(self.raw())
 
     def __new__(cls, text):
+        text = uncolorize(text)  # remove exiting colors
         self = str.__new__(cls, text)
         self.tokens = []
         for text in _RE_COLOR.split(text):

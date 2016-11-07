@@ -81,11 +81,13 @@ class TermenuAdapter(termenu.Termenu):
                 title_lines.append(line)
             else:
                 line = uncolorize(line)
+                prefix = ""
                 while line:
-                    title_lines.append(line[:terminal_width])
+                    title_lines.append(prefix + line[:terminal_width])
                     line = line[terminal_width:]
-                    title_lines[-1] += "DARK_RED<<\u21a9>>"
-                    line = Colorized("  DARK_RED<<\u21aa>> ") + line
+                    if line:
+                        title_lines[-1] += str(Colorized("DARK_RED<<\u21a9>>"))
+                    prefix = str(Colorized("  DARK_RED<<\u21aa>> "))
         self.title_height = len(title_lines)
         self.title = Colorized("\n".join(title_lines))
         with self._selection_preserved(selection):

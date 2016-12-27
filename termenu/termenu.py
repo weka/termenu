@@ -102,7 +102,8 @@ class Termenu(object):
         for plugin in plugins or []:
             register_plugin(self, plugin)
         self.options = self._make_option_objects(options)
-        self.height = min(height or 10, len(self.options))
+        max_height = get_terminal_size()[1] - 1  # one for the title
+        self.height = min(height or 10, len(self.options), max_height)
         self.width = self._compute_width(width, self.options)
         self.multiselect = multiselect
         self.cursor = 0

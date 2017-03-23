@@ -136,7 +136,7 @@ class TermenuAdapter(termenu.Termenu):
             return
 
         prev_active = self._get_active_option().result
-        prev_selected = set(o.result for o in self.options if o.selected) if selection is None else set(selection)
+        prev_selected = set(o.result for o in self._allOptions if o.selected) if selection is None else set(selection)
         try:
             yield
         finally:

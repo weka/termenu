@@ -596,9 +596,13 @@ class AppMenu(object):
     def wait_for_keys(keys=("enter", "esc"), prompt=None):
         if prompt:
             print(Colorized(prompt), end=" ", flush=True)
+            ansi.show_cursor()
 
         keys = set(keys)
-        for key in keyboard.keyboard_listener():
-            if not keys or key in keys:
-                print()
-                return key
+        try:
+            for key in keyboard.keyboard_listener():
+                if not keys or key in keys:
+                    print()
+                    return key
+        finally:
+            ansi.hide_cursor()

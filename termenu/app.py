@@ -194,19 +194,26 @@ class TermenuAdapter(termenu.Termenu):
                 self.text.append(key)
                 self._refilter()
             bubble_up = False
-        elif self.is_empty and key == "enter":
+        elif key == "enter" and self.is_empty:
             bubble_up = False
-        elif self.text and key == "backspace":
+        elif key == "backspace" and self.text:
             del self.text[-1]
             self._refilter()
-        elif self.text is not None and key == "esc":
-            filters = "".join(self.text or []).split(self.FILTER_SEPARATOR)
-            if filters:
-                filters.pop(-1)
-            self.text = list(self.FILTER_SEPARATOR.join(filters)) if filters else None
-            termenu.ansi.hide_cursor()
-            bubble_up = False
-            self._refilter()
+        elif key == "esc":
+            if self.text is not None:
+                filters = "".join(self.text or []).split(self.FILTER_SEPARATOR)
+                if filters:
+                    filters.pop(-1)
+                self.text = list(self.FILTER_SEPARATOR.join(filters)) if filters else None
+                termenu.ansi.hide_cursor()
+                bubble_up = False
+                self._refilter()
+            else:
+                found_selected = False
+                for option in self.options:
+                    found_selected = found_selected or option.selected
+                    option.selected = False
+                bubble_up = not  found_selected
         elif key == "end":
             self._on_end()
             bubble_up = False

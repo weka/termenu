@@ -7,7 +7,11 @@ import select
 import errno
 import string
 
-STDIN = sys.stdin.fileno()
+try:
+    STDIN = sys.stdin.fileno()
+except ValueError:
+    STDIN = None
+
 
 ANSI_SEQUENCES = dict(
     up = '\x1b[A',

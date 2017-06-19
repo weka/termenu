@@ -606,3 +606,6 @@ class AppMenu(object):
                     return key
         finally:
             ansi.hide_cursor()
+
+    def terminal_released(self):
+        return termenu.Termenu.terminal.closed()

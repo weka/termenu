@@ -82,6 +82,9 @@ class Plugin(object):
 
 
 class Termenu(object):
+
+    terminal = keyboard.RawTerminal(blocking=False)
+
     class _Option(object):
         def __init__(self, option, **attrs):
             self.selected = False
@@ -128,7 +131,7 @@ class Termenu(object):
         ansi.save_position()
         ansi.hide_cursor()
         try:
-            for key in keyboard.keyboard_listener(self._heartbeat):
+            for key in self.terminal.listen(heartbeat=self._heartbeat):
                 stop = self._on_key(key)
                 if stop:
                     return self.get_result()

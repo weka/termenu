@@ -6,6 +6,7 @@ import termios
 import select
 import errno
 import string
+from contextlib import contextmanager
 
 try:
     STDIN = sys.stdin.fileno()
@@ -55,8 +56,13 @@ KEY_NAMES.update({
 class RawTerminal(object):
     def __init__(self, blocking=True):
         self._blocking = blocking
+        self._opened = 0
 
     def open(self):
+        self._opened += 1
+        if self._opened > 1:
+            return
+
         # Set raw mode
         self._oldterm = termios.tcgetattr(STDIN)
         newattr = termios.tcgetattr(STDIN)
@@ -69,6 +75,9 @@ class RawTerminal(object):
             fcntl.fcntl(STDIN, fcntl.F_SETFL, self._old | os.O_NONBLOCK)
 
     def close(self):
+        self._opened -= 1
+        if self._opened > 0:
+            return
         # Restore previous terminal mode
         termios.tcsetattr(STDIN, termios.TCSAFLUSH, self._oldterm)
         fcntl.fcntl(STDIN, fcntl.F_SETFL, self._old)
@@ -89,9 +98,22 @@ class RawTerminal(object):
     def __exit__(self, *args):
         self.close()
 
+    @contextmanager
+    def closed(self):
+        self.close()
+        try:
+            yield
+        finally:
+            self.open()
 
-def keyboard_listener(heartbeat=None):
-    with RawTerminal(blocking=False) as terminal:
+    def listen(self, **kw):
+        return keyboard_listener(terminal=self, **kw)
+
+
+def keyboard_listener(heartbeat=None, terminal=None):
+    if not terminal:
+        terminal = RawTerminal(blocking=False)
+    with terminal:
         # return keys
         sequence = ""
         while True:

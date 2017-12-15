@@ -13,6 +13,11 @@ try:
 except ValueError:
     STDIN = None
 
+try:
+    STDOUT = sys.stdin.fileno()
+except ValueError:
+    STDOUT = None
+
 
 ANSI_SEQUENCES = dict(
     up = '\x1b[A',
@@ -70,9 +75,12 @@ class RawTerminal(object):
         termios.tcsetattr(STDIN, termios.TCSANOW, newattr)
 
         # Set non-blocking IO on stdin
-        self._old = fcntl.fcntl(STDIN, fcntl.F_GETFL)
+        self._old_in = fcntl.fcntl(STDIN, fcntl.F_GETFL)
+        self._old_out = fcntl.fcntl(STDOUT, fcntl.F_GETFL)
+
         if not self._blocking:
-            fcntl.fcntl(STDIN, fcntl.F_SETFL, self._old | os.O_NONBLOCK)
+            fcntl.fcntl(STDIN, fcntl.F_SETFL, self._old_in | os.O_NONBLOCK)
+            fcntl.fcntl(STDOUT, fcntl.F_SETFL, self._old_out | os.O_NONBLOCK)
 
     def close(self):
         self._opened -= 1
@@ -80,7 +88,8 @@ class RawTerminal(object):
             return
         # Restore previous terminal mode
         termios.tcsetattr(STDIN, termios.TCSAFLUSH, self._oldterm)
-        fcntl.fcntl(STDIN, fcntl.F_SETFL, self._old)
+        fcntl.fcntl(STDIN, fcntl.F_SETFL, self._old_in)
+        fcntl.fcntl(STDOUT, fcntl.F_SETFL, self._old_out)
 
     def get(self):
         ret = sys.stdin.read(1)

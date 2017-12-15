@@ -1,10 +1,38 @@
-
-
+import os
 import errno
 import sys
 import re
 
 COLORS = dict(black=0, red=1, green=2, yellow=3, blue=4, magenta=5, cyan=6, white=7, default=9)
+
+
+def partition_ansi(s):
+    # partition to ansi escape characters and regular characters. For the regular characters write at once, for escape one by one.
+    ansi_escape = re.compile(r'(\x9B|\x1B\[)[0-?]*[ -\/]*[@-~]')
+    spans = [m.span() for m in ansi_escape.finditer(s)]
+    last_end = end = 0
+    for start, end in spans:
+        if start - last_end:
+            yield (start - last_end, s[last_end:start])
+        yield (1, s[start:end])
+        last_end = end
+    if len(s[end:]):
+        yield (len(s[end:]), s[end:])
+
+
+def stdout_write(s):
+    fd = sys.stdout.fileno()
+    for size, text in partition_ansi(s):
+        written = 0
+        while written < len(text):
+            remains = text[written:written+size].encode("utf8")
+            try:
+                written += os.write(fd, remains)
+            except OSError as e:
+                if e.errno != errno.EAGAIN:
+                    raise
+                pass
+
 
 def write(text):
     def _retry(func, *args):
@@ -19,9 +47,7 @@ def write(text):
             else:
                 break
 
-    size = 1024  # to workaround an issue on OSx where the buffer is too big
-    for i in range(0, len(text), size):
-        _retry(sys.stdout.write, text[i:i+size])
+    stdout_write(text)
     _retry(sys.stdout.flush)
 
 def up(n=1):

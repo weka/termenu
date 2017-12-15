@@ -74,20 +74,22 @@ class TermenuAdapter(termenu.Termenu):
             title += "\n" + header
         title = Colorized(title)
         terminal_width, _ = termenu.get_terminal_size()
-        terminal_width -= 2
+        PAD_WIDTH = 2 # continuation sign is 2 characters (at least on mac)
+        terminal_width -= PAD_WIDTH * 2
         title_lines = []
         for line in title.splitlines():
             if len(uncolorize(line)) <= terminal_width:
                 title_lines.append(line)
             else:
-                line = uncolorize(line)
+                # line = uncolorize(line) used Colorized version to handle the splits instead of raw str
                 prefix = ""
                 while line:
-                    title_lines.append(prefix + line[:terminal_width])
-                    line = line[terminal_width:]
+                    width = terminal_width if prefix else terminal_width + PAD_WIDTH
+                    title_lines.append(prefix + line.expandtabs()[:width]) # count tabs length
+                    line = line.expandtabs()[width:]
                     if line:
-                        title_lines[-1] += str(Colorized("DARK_RED<<\u21a9>>"))
-                    prefix = str(Colorized("  DARK_RED<<\u21aa>> "))
+                        title_lines[-1] += Colorized("DARK_RED<<\u21a9>>")
+                    prefix =  Colorized("DARK_RED<<\u21aa>> ")
         self.title_height = len(title_lines)
         self.title = Colorized("\n".join(title_lines))
         with self._selection_preserved(selection):
@@ -595,7 +597,8 @@ class AppMenu(object):
     @staticmethod
     def wait_for_keys(keys=("enter", "esc"), prompt=None):
         if prompt:
-            print(Colorized(prompt), end=" ", flush=True)
+            termenu.ansi.write(Colorized(prompt))  # Aviod bocking
+            termenu.ansi.write(" ")
             ansi.show_cursor()
 
         keys = set(keys)

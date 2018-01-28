@@ -6,25 +6,35 @@ import re
 COLORS = dict(black=0, red=1, green=2, yellow=3, blue=4, magenta=5, cyan=6, white=7, default=9)
 
 
-def partition_ansi(s):
-    # partition to ansi escape characters and regular characters. For the regular characters write at once, for escape one by one.
-    ansi_escape = re.compile(r'(\x9B|\x1B\[)[0-?]*[ -\/]*[@-~]')
-    spans = [m.span() for m in ansi_escape.finditer(s)]
-    last_end = end = 0
-    for start, end in spans:
-        if start - last_end:
-            yield (start - last_end, s[last_end:start])
-        yield (1, s[start:end])
-        last_end = end
-    if len(s[end:]):
-        yield (len(s[end:]), s[end:])
+if sys.platform == "darwin":
+    # On Mac, partition to ansi escape characters and regular characters.
+    # For the regular characters write at once, for escape one by one.
+    def partition_ansi(s):
+        ansi_escape = re.compile(r'(\x9B|\x1B\[)[0-?]*[ -\/]*[@-~]')
+        spans = (m.span() for m in ansi_escape.finditer(s))
+        last_end = end = 0
+        for start, end in spans:
+            if start > last_end:
+                chunk = s[last_end:start]
+                yield chunk
+            for c in s[start:end]:
+                yield c
+            last_end = end
+
+        remainder = s[end:]
+        if remainder:
+            yield remainder
+else:
+    def partition_ansi(s):
+        yield s
 
 
 def stdout_write(s):
     fd = sys.stdout.fileno()
-    for size, text in partition_ansi(s):
+    for text in partition_ansi(s):
         written = 0
-        while written < len(text):
+        size = len(text)
+        while written < size:
             remains = text[written:written+size].encode("utf8")
             try:
                 written += os.write(fd, remains)

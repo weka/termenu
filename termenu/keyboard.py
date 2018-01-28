@@ -20,31 +20,48 @@ except ValueError:
 
 
 ANSI_SEQUENCES = dict(
-    up = '\x1b[A',
-    down = '\x1b[B',
-    right = '\x1b[C',
-    left = '\x1b[D',
-    home = '\x1bOH',
-    end = '\x1bOF',
-    insert = '\x1b[2~',
-    delete = '\x1b[3~',
-    pageUp = '\x1b[5~',
-    pageDown = '\x1b[6~',
-    ctrlLeft = '\x1b[1;5C',
-    ctrlRight = '\x1b[1;5D',
-    F1 = '\x1bOP',
-    F2 = '\x1bOQ',
-    F3 = '\x1bOR',
-    F4 = '\x1bOS',
-    F5 = '\x1b[15~',
-    F6 = '\x1b[17~',
-    F7 = '\x1b[18~',
-    F8 = '\x1b[19~',
-    F9 = '\x1b[20~',
-    F10 = '\x1b[21~',
-    F11 = '\x1b[23~',
-    F12 = '\x1b[24~',
+    up='\x1b[A',
+    down='\x1b[B',
+    right='\x1b[C',
+    left='\x1b[D',
+    home='\x1bOH',
+    end='\x1bOF',
+    insert='\x1b[2~',
+    delete='\x1b[3~',
+    pageUp='\x1b[5~',
+    pageDown='\x1b[6~',
+    ctrlLeft='\x1b[1;5C',
+    ctrlRight='\x1b[1;5D',
+    ctrlUp='\x1b[1;5A',
+    ctrlDown='\x1b[1;5B',
+    F1='\x1bOP',
+    F2='\x1bOQ',
+    F3='\x1bOR',
+    F4='\x1bOS',
+    F5='\x1b[15~',
+    F6='\x1b[17~',
+    F7='\x1b[18~',
+    F8='\x1b[19~',
+    F9='\x1b[20~',
+    F10='\x1b[21~',
+    F11='\x1b[23~',
+    F12='\x1b[24~',
 )
+
+
+try:
+    for line in open(os.path.expanduser("~/.termenu/ansi_mapping")):
+        if not line or line.startswith("#"):
+            continue
+        name, sep, sequence = line.replace(" ", "").replace("\t", "").strip().partition(":")
+        if not sep:
+            continue
+        if not sequence:
+            continue
+        ANSI_SEQUENCES[name] = sequence = eval("'%s'" % sequence)
+except FileNotFoundError:
+    pass
+
 
 for c in string.ascii_lowercase:
     ANSI_SEQUENCES['ctrl_%s' % c] = chr(ord(c) - ord('a')+1)

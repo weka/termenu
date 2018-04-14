@@ -34,6 +34,8 @@ ANSI_SEQUENCES = dict(
     ctrlRight='\x1b[1;5D',
     ctrlUp='\x1b[1;5A',
     ctrlDown='\x1b[1;5B',
+    ctrlSlash='\x1f',
+
     F1='\x1bOP',
     F2='\x1bOQ',
     F3='\x1bOR',
@@ -46,6 +48,30 @@ ANSI_SEQUENCES = dict(
     F10='\x1b[21~',
     F11='\x1b[23~',
     F12='\x1b[24~',
+
+    ctrlF2='\x1bO1;5Q',
+    ctrlF3='\x1bO1;5R',
+    ctrlF4='\x1bO1;5S',
+    ctrlF5='\x1b[15;5~',
+    ctrlF6='\x1b[17;5~',
+    ctrlF7='\x1b[18;5~',
+    ctrlF8='\x1b[19;5~',
+    ctrlF9='\x1b[20;5~',
+    ctrlF10='\x1b[21;5~',
+    ctrlF11='\x1b[23;5~',
+    ctrlF12='\x1b[24;5~',
+
+    shiftF1='\x1bO1;2P',
+    shiftF2='\x1bO1;2Q',
+    shiftF3='\x1bO1;2R',
+    shiftF4='\x1bO1;2S',
+    shiftF5='\x1b[15;2~',
+    shiftF6='\x1b[17;2~',
+    shiftF7='\x1b[18;2~',
+    shiftF8='\x1b[19;2~',
+    shiftF9='\x1b[20;2~',
+    shiftF11='\x1b[23;2~',
+    shiftF12='\x1b[24;2~',
 )
 
 

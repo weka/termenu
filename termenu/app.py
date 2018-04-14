@@ -53,6 +53,7 @@ class TermenuAdapter(termenu.Termenu):
     def __init__(self, app):
         self.height = self.title_height = 1
         self.text = None
+        self.invert_filter = False
         self.is_empty = True
         self.dirty = False
         self.timeout = (time.time() + app.timeout) if app.timeout else None
@@ -232,6 +233,10 @@ class TermenuAdapter(termenu.Termenu):
     def _on_F1(self):
         self.help()
 
+    def _on_ctrlSlash(self):
+        self.invert_filter = not self.invert_filter
+        self._refilter()
+
     def _on_enter(self):
         if any(option.selected for option in self.options):
             self._highlighted = True
@@ -273,7 +278,11 @@ class TermenuAdapter(termenu.Termenu):
     def _print_footer(self):
         if self.text is not None:
             filters = "".join(self.text).split(self.FILTER_SEPARATOR)
-            termenu.ansi.write("/%s" % termenu.ansi.colorize(" , ", "white", bright=True).join(filters))
+            if self.invert_filter:
+                termenu.ansi.write(termenu.ansi.colorize("\\", "yellow", bright=True))
+            else:
+                termenu.ansi.write(termenu.ansi.colorize("/", "cyan", bright=True))
+            termenu.ansi.write(termenu.ansi.colorize(" , ", "white", bright=True).join(filters))
             termenu.ansi.show_cursor()
 
     def _print_menu(self):
@@ -314,11 +323,11 @@ class TermenuAdapter(termenu.Termenu):
         with self._selection_preserved():
             self._clear_cache()
             self.options = []
-            texts = "".join(self.text or []).lower().split(self.FILTER_SEPARATOR)
-            pred = lambda option: all(text in uncolorize(option.text).lower() for text in texts)
+            texts = set(filter(None, "".join(self.text or []).lower().split(self.FILTER_SEPARATOR)))
+            pred = lambda option: self.invert_filter ^ all(text in uncolorize(option.text).lower() for text in texts)
             # filter the matching options
             for option in self._allOptions:
-                if option.attrs.get("showAlways") or pred(option):
+                if option.attrs.get("showAlways") or not texts or pred(option):
                     self.options.append(option)
             # select the first matching element (showAlways elements might not match)
             self.scroll = 0

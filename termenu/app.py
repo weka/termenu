@@ -33,6 +33,7 @@ class TermenuAdapter(termenu.Termenu):
     class SelectSignal(ParamsException): pass
 
     FILTER_SEPARATOR = ","
+    FILTER_MODES = ["and", "nand", "or", "nor"]
     EMPTY = "DARK_RED<< (Empty) >>"
 
     class _Option(termenu.Termenu._Option):
@@ -53,11 +54,15 @@ class TermenuAdapter(termenu.Termenu):
     def __init__(self, app):
         self.height = self.title_height = 1
         self.text = None
-        self.invert_filter = False
+        self.filter_mode_idx = 0
         self.is_empty = True
         self.dirty = False
         self.timeout = (time.time() + app.timeout) if app.timeout else None
         self.app = app
+
+    @property
+    def filter_mode(self):
+        return self.FILTER_MODES[self.filter_mode_idx]
 
     def reset(self, title="No Title", header="", selection=None, *args, **kwargs):
         self._highlighted = False
@@ -208,7 +213,9 @@ class TermenuAdapter(termenu.Termenu):
                 if filters:
                     filters.pop(-1)
                 self.text = list(self.FILTER_SEPARATOR.join(filters)) if filters else None
-                termenu.ansi.hide_cursor()
+                if not filters:
+                    self.filter_mode_idx = 0
+                ansi.hide_cursor()
                 bubble_up = False
                 self._refilter()
             else:
@@ -234,8 +241,9 @@ class TermenuAdapter(termenu.Termenu):
         self.help()
 
     def _on_ctrlSlash(self):
-        self.invert_filter = not self.invert_filter
-        self._refilter()
+        if self.text:
+            self.filter_mode_idx = (self.filter_mode_idx + 1) % len(self.FILTER_MODES)
+            self._refilter()
 
     def _on_enter(self):
         if any(option.selected for option in self.options):
@@ -245,7 +253,7 @@ class TermenuAdapter(termenu.Termenu):
             time.sleep(.1)
         elif not self._get_active_option().selectable:
             return False
-        return True # stop loop
+        return True  # stop loop
 
     def _on_insert(self):
         option = self._get_active_option()
@@ -278,22 +286,24 @@ class TermenuAdapter(termenu.Termenu):
     def _print_footer(self):
         if self.text is not None:
             filters = "".join(self.text).split(self.FILTER_SEPARATOR)
-            if self.invert_filter:
-                termenu.ansi.write(termenu.ansi.colorize("\\", "yellow", bright=True))
+            mode = self.filter_mode
+            mode_mark = ansi.colorize("\\", "yellow", bright=True) if mode.startswith("n") else ansi.colorize("/", "cyan", bright=True)
+            if mode == "and":
+                ansi.write("%s " % mode_mark)
             else:
-                termenu.ansi.write(termenu.ansi.colorize("/", "cyan", bright=True))
-            termenu.ansi.write(termenu.ansi.colorize(" , ", "white", bright=True).join(filters))
-            termenu.ansi.show_cursor()
+                ansi.write("(%s) %s " % (mode, mode_mark))
+            ansi.write(ansi.colorize(" , ", "white", bright=True).join(filters))
+            ansi.show_cursor()
 
     def _print_menu(self):
         ansi.write("\r%s\n" % self.title)
         super(TermenuAdapter, self)._print_menu()
         for _ in range(0, self.height - len(self.options)):
-            termenu.ansi.clear_eol()
-            termenu.ansi.write("\n")
+            ansi.clear_eol()
+            ansi.write("\n")
         self._print_footer()
 
-        termenu.ansi.clear_eol()
+        ansi.clear_eol()
 
     def _goto_top(self):
         super(TermenuAdapter, self)._goto_top()
@@ -307,15 +317,15 @@ class TermenuAdapter(termenu.Termenu):
     def _clear_menu(self):
         super(TermenuAdapter, self)._clear_menu()
         clear = getattr(self, "clear", True)
-        termenu.ansi.restore_position()
+        ansi.restore_position()
         height = self.get_total_height()
         if clear:
             for i in range(height):
-                termenu.ansi.clear_eol()
-                termenu.ansi.up()
-            termenu.ansi.clear_eol()
+                ansi.clear_eol()
+                ansi.up()
+            ansi.clear_eol()
         else:
-            termenu.ansi.up(height)
+            ansi.up(height)
         ansi.clear_eol()
         ansi.write("\r")
 
@@ -324,7 +334,16 @@ class TermenuAdapter(termenu.Termenu):
             self._clear_cache()
             self.options = []
             texts = set(filter(None, "".join(self.text or []).lower().split(self.FILTER_SEPARATOR)))
-            pred = lambda option: self.invert_filter ^ all(text in uncolorize(option.text).lower() for text in texts)
+            if self.filter_mode == "and":
+                pred = lambda option: all(text in uncolorize(option.text).lower() for text in texts)
+            elif self.filter_mode == "nand":
+                pred = lambda option: not all(text in uncolorize(option.text).lower() for text in texts)
+            elif self.filter_mode == "or":
+                pred = lambda option: any(text in uncolorize(option.text).lower() for text in texts)
+            elif self.filter_mode == "nor":
+                pred = lambda option: not any(text in uncolorize(option.text).lower() for text in texts)
+            else:
+                assert False, self.filter_mode
             # filter the matching options
             for option in self._allOptions:
                 if option.attrs.get("showAlways") or not texts or pred(option):
@@ -606,8 +625,8 @@ class AppMenu(object):
     @staticmethod
     def wait_for_keys(keys=("enter", "esc"), prompt=None):
         if prompt:
-            termenu.ansi.write(Colorized(prompt))  # Aviod bocking
-            termenu.ansi.write(" ")
+            ansi.write(Colorized(prompt))  # Aviod bocking
+            ansi.write(" ")
             ansi.show_cursor()
 
         keys = set(keys)

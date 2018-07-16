@@ -41,6 +41,7 @@ class TermenuAdapter(termenu.Termenu):
             super(TermenuAdapter._Option, self).__init__(*args, **kwargs)
             self.raw = self.text
             self.text = Colorized(self.raw)
+            self.filter_text = (self.attrs.get('filter_text') or self.text.uncolored).lower()
             if isinstance(self.result, str):
                 self.result = ansi.decolorize(self.result)
         @property
@@ -335,13 +336,13 @@ class TermenuAdapter(termenu.Termenu):
             self.options = []
             texts = set(filter(None, "".join(self.text or []).lower().split(self.FILTER_SEPARATOR)))
             if self.filter_mode == "and":
-                pred = lambda option: all(text in uncolorize(option.text).lower() for text in texts)
+                pred = lambda option: all(text in option.filter_text for text in texts)
             elif self.filter_mode == "nand":
-                pred = lambda option: not all(text in uncolorize(option.text).lower() for text in texts)
+                pred = lambda option: not all(text in option.filter_text for text in texts)
             elif self.filter_mode == "or":
-                pred = lambda option: any(text in uncolorize(option.text).lower() for text in texts)
+                pred = lambda option: any(text in option.filter_text for text in texts)
             elif self.filter_mode == "nor":
-                pred = lambda option: not any(text in uncolorize(option.text).lower() for text in texts)
+                pred = lambda option: not any(text in option.filter_text for text in texts)
             else:
                 assert False, self.filter_mode
             # filter the matching options

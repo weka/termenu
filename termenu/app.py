@@ -35,6 +35,8 @@ class TermenuAdapter(termenu.Termenu):
     FILTER_SEPARATOR = ","
     FILTER_MODES = ["and", "nand", "or", "nor"]
     EMPTY = "DARK_RED<< (Empty) >>"
+    SCROLL_UP_MARKER = "🢁"
+    SCROLL_DOWN_MARKER = "🢃"
 
     class _Option(termenu.Termenu._Option):
         def __init__(self, *args, **kwargs):
@@ -96,9 +98,9 @@ class TermenuAdapter(termenu.Termenu):
                     line = line.expandtabs()[width:]
                     if line:
                         title_lines[-1] += Colorized("DARK_RED<<\u21a9>>")
-                    prefix =  Colorized("DARK_RED<<\u21aa>> ")
+                    prefix = Colorized("DARK_RED<<\u21aa>> ")
         self.title_height = len(title_lines)
-        self.title = Colorized("\n".join(title_lines))
+        self.title = Colorized("\n".join("  " + l for l in title_lines))
         with self._selection_preserved(selection):
             super(TermenuAdapter, self).__init__(*args, **kwargs)
 
@@ -129,14 +131,8 @@ class TermenuAdapter(termenu.Termenu):
             option = str(option)  # convert from Colorized to ansi string
 
         # add more above/below indicators
-        if moreAbove:
-            option = option + " " + ansi.colorize("^", "white", bright=True)
-        elif moreBelow:
-            option = option + " " + ansi.colorize("v", "white", bright=True)
-        else:
-            option = option + "  "
-
-        return option
+        marker = self.SCROLL_UP_MARKER if moreAbove else self.SCROLL_DOWN_MARKER if moreBelow else " "
+        return ansi.colorize(marker, "white", bright=True) + " " + option
 
     @contextmanager
     def _selection_preserved(self, selection=None):

@@ -1,5 +1,7 @@
+import re
 import time
 import functools
+import signal
 from textwrap import wrap
 from . import termenu, keyboard
 from contextlib import contextmanager
@@ -21,22 +23,55 @@ class ParamsException(Exception):
 
 NoneType = type(None)
 
+import os
+
+DEFAULT_CONFIG = """
+SCROLL_UP_MARKER = "🢁"
+SCROLL_DOWN_MARKER = "🢃"
+ACTIVE_MARKER = " WHITE@{🞂}@"
+SELECTED_MARKER = "WHITE@{⚫}@"
+UNSELECTED_MARKER = "⚪"
+CONTINUATION_SUFFIX = "DARK_RED@{↩}@"
+CONTINUATION_PREFIX = "DARK_RED@{↪}@"
+"""
+
+CFG_PATH = os.path.expanduser("~/.termenu/app_chars.py")
+
+try:
+    with open(CFG_PATH) as f:
+        app_chars = f.read()
+except FileNotFoundError:
+    os.makedirs(os.path.dirname(CFG_PATH), exist_ok=True)
+    f = open(CFG_PATH, "w")
+    f.write(DEFAULT_CONFIG)
+    app_chars = DEFAULT_CONFIG
+
+
+APP_CHARS = {}
+eval(compile(app_chars, CFG_PATH, 'exec'), {}, APP_CHARS)
+
 
 # ===============================================================================
 # Termenu
 # ===============================================================================
 class TermenuAdapter(termenu.Termenu):
 
-    class RefreshSignal(ParamsException):  pass
-    class TimeoutSignal(ParamsException):  pass
-    class HelpSignal(ParamsException): pass
-    class SelectSignal(ParamsException): pass
+    class RefreshSignal(ParamsException): ...
+    class TimeoutSignal(ParamsException): ...
+    class HelpSignal(ParamsException): ...
+    class SelectSignal(ParamsException): ...
 
     FILTER_SEPARATOR = ","
     FILTER_MODES = ["and", "nand", "or", "nor"]
     EMPTY = "DARK_RED<< (Empty) >>"
-    SCROLL_UP_MARKER = "🢁"
-    SCROLL_DOWN_MARKER = "🢃"
+    SCROLL_UP_MARKER = APP_CHARS['SCROLL_UP_MARKER']
+    SCROLL_DOWN_MARKER = APP_CHARS['SCROLL_DOWN_MARKER']
+    ACTIVE_MARKER = APP_CHARS['ACTIVE_MARKER']
+    SELECTED_MARKER = APP_CHARS['SELECTED_MARKER']
+    UNSELECTED_MARKER = APP_CHARS['UNSELECTED_MARKER']
+    CONTINUATION_SUFFIX = Colorized(APP_CHARS['CONTINUATION_SUFFIX'])
+    CONTINUATION_PREFIX = Colorized(APP_CHARS['CONTINUATION_PREFIX'])
+    TITLE_PAD = "  "
 
     class _Option(termenu.Termenu._Option):
         def __init__(self, *args, **kwargs):
@@ -46,6 +81,7 @@ class TermenuAdapter(termenu.Termenu):
             self.filter_text = (self.attrs.get('filter_text') or self.text.uncolored).lower()
             if isinstance(self.result, str):
                 self.result = ansi.decolorize(self.result)
+            self.menu = None  # will get filled up later
         @property
         def selectable(self):
             return self.attrs.get("selectable", True)
@@ -62,12 +98,17 @@ class TermenuAdapter(termenu.Termenu):
         self.dirty = False
         self.timeout = (time.time() + app.timeout) if app.timeout else None
         self.app = app
+        signal.signal(signal.SIGWINCH, self.handle_termsize_change)
+
+    def handle_termsize_change(self, signal, frame):
+        self.refresh("signal")
 
     @property
     def filter_mode(self):
         return self.FILTER_MODES[self.filter_mode_idx]
 
-    def reset(self, title="No Title", header="", selection=None, *args, **kwargs):
+    def reset(self, title="No Title", header="", selection=None, *args, height, **kwargs):
+
         self._highlighted = False
         remains = self.timeout and (self.timeout - time.time())
         if remains:
@@ -82,35 +123,48 @@ class TermenuAdapter(termenu.Termenu):
         if header:
             title += "\n" + header
         title = Colorized(title)
-        terminal_width, _ = termenu.get_terminal_size()
-        PAD_WIDTH = 2 # continuation sign is 2 characters (at least on mac)
-        terminal_width -= PAD_WIDTH * 2
+        terminal_width, terminal_height = termenu.get_terminal_size()
+        if not height:
+            height = terminal_height - 2  # leave a margine
+        terminal_width -= len(self.TITLE_PAD)
         title_lines = []
+
         for line in title.splitlines():
-            if len(uncolorize(line)) <= terminal_width:
+            line = line.expandtabs()
+            if len(line.uncolored) <= terminal_width:
                 title_lines.append(line)
             else:
-                # line = uncolorize(line) used Colorized version to handle the splits instead of raw str
-                prefix = ""
+                indentation, line = re.match("(\\s*)(.*)", line).groups()
+                line = Colorized(line)
+                continuation_prefix = ""
                 while line:
-                    width = terminal_width if prefix else terminal_width + PAD_WIDTH
-                    title_lines.append(prefix + line.expandtabs()[:width]) # count tabs length
-                    line = line.expandtabs()[width:]
+                    # we have to keep space for a possible contat the end
+                    width = terminal_width - len(indentation) - len(self.CONTINUATION_SUFFIX.uncolored)
+                    if continuation_prefix:
+                        width -= len(continuation_prefix.uncolored)
+                        line = self.CONTINUATION_PREFIX + line
+                    title_lines.append(indentation + line[:width])
+                    line = line[width:]
                     if line:
-                        title_lines[-1] += Colorized("DARK_RED<<\u21a9>>")
-                    prefix = Colorized("DARK_RED<<\u21aa>> ")
+                        title_lines[-1] += self.CONTINUATION_SUFFIX
+                    continuation_prefix = self.CONTINUATION_PREFIX
+
         self.title_height = len(title_lines)
-        self.title = Colorized("\n".join("  " + l for l in title_lines))
+        self.title = Colorized("\n".join(self.TITLE_PAD + l for l in title_lines))
+        height -= self.title_height
         with self._selection_preserved(selection):
-            super(TermenuAdapter, self).__init__(*args, **kwargs)
+            super(TermenuAdapter, self).__init__(*args, height=height, **kwargs)
 
     def _make_option_objects(self, options):
         options = super(TermenuAdapter, self)._make_option_objects(options)
+        for opt in options:
+            opt.menu = self
         self._allOptions = options[:]
         return options
 
     def _decorate_flags(self, index):
         flags = super()._decorate_flags(index)
+        flags["markable"] = self.options[self.scroll + index].attrs.get("markable", self.multiselect)
         flags['highlighted'] = self._highlighted and flags['selected']
         return flags
 
@@ -120,11 +174,15 @@ class TermenuAdapter(termenu.Termenu):
         highlighted = flags.get("highlighted", True)
         active = flags.get("active", False)
         selected = flags.get("selected", False)
+        markable = flags.get("markable", False)
         moreAbove = flags.get("moreAbove", False)
         moreBelow = flags.get("moreBelow", False)
 
         # add selection / cursor decorations
-        option = Colorized(("WHITE<<*>> " if selected else "  ") + ("WHITE@{>}@" if active else " ") + option)
+        option = Colorized(
+            (" " if not markable else self.SELECTED_MARKER if selected else self.UNSELECTED_MARKER) +
+            (self.ACTIVE_MARKER if active else "  ") +
+            option)
         if highlighted:
             option = ansi.colorize(option.uncolored, "cyan", bright=True)
         else:
@@ -390,7 +448,7 @@ class AppMenu(object):
 
     @property
     def height(self):
-        return termenu.get_terminal_size()[1] // 2
+        return None  # use entire terminal height
 
     @property
     def items(self):

@@ -51,6 +51,15 @@ APP_CHARS = {}
 eval(compile(app_chars, CFG_PATH, 'exec'), {}, APP_CHARS)
 
 
+@contextmanager
+def _no_resize_handler():
+    handler = signal.signal(signal.SIGWINCH, signal.SIG_DFL)
+    try:
+        yield
+    finally:
+        signal.signal(signal.SIGWINCH, handler)
+
+
 # ===============================================================================
 # Termenu
 # ===============================================================================
@@ -82,6 +91,7 @@ class TermenuAdapter(termenu.Termenu):
             if isinstance(self.result, str):
                 self.result = ansi.decolorize(self.result)
             self.menu = None  # will get filled up later
+
         @property
         def selectable(self):
             return self.attrs.get("selectable", True)
@@ -98,7 +108,6 @@ class TermenuAdapter(termenu.Termenu):
         self.dirty = False
         self.timeout = (time.time() + app.timeout) if app.timeout else None
         self.app = app
-        signal.signal(signal.SIGWINCH, self.handle_termsize_change)
 
     def handle_termsize_change(self, signal, frame):
         self.refresh("signal")
@@ -212,7 +221,11 @@ class TermenuAdapter(termenu.Termenu):
         self._refilter()
         self._clear_cache()
         self._set_default(default)
-        return super(TermenuAdapter, self).show(auto_clear=auto_clear)
+        orig_handler = signal.signal(signal.SIGWINCH, self.handle_termsize_change)
+        try:
+            return super(TermenuAdapter, self).show(auto_clear=auto_clear)
+        finally:
+            signal.signal(signal.SIGWINCH, orig_handler)
 
     def _set_default(self, default):
         if default is None:

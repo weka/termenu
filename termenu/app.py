@@ -2,7 +2,7 @@ import re
 import time
 import functools
 import signal
-from textwrap import wrap
+from textwrap import dedent
 from . import termenu, keyboard
 from contextlib import contextmanager
 from . import ansi
@@ -28,11 +28,11 @@ import os
 DEFAULT_CONFIG = """
 SCROLL_UP_MARKER = "🢁"
 SCROLL_DOWN_MARKER = "🢃"
-ACTIVE_MARKER = " WHITE@{🞂}@"
-SELECTED_MARKER = "WHITE@{⚫}@"
-UNSELECTED_MARKER = "⚪"
-CONTINUATION_SUFFIX = "DARK_RED@{↩}@"
-CONTINUATION_PREFIX = "DARK_RED@{↪}@"
+ACTIVE_ITEM_MARKER = " WHITE@{🞂}@"
+SELECTED_ITEM_MARKER = "WHITE@{⚫}@"
+SELECTABLE_ITEM_MARKER = "⚪"
+CONTINUATION_SUFFIX = "DARK_RED@{↩}@"  # for when a line overflows
+CONTINUATION_PREFIX = "DARK_RED@{↪}@"  # for when a line overflows
 """
 
 CFG_PATH = os.path.expanduser("~/.termenu/app_chars.py")
@@ -41,6 +41,27 @@ try:
     with open(CFG_PATH) as f:
         app_chars = f.read()
 except FileNotFoundError:
+    os.system("clear")
+    print(Colorized(dedent("""
+        RED<<.-~~~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~~~-.>>
+
+        WHITE<<termenu>> has created for you this default configuration file: CYAN<<~/.termenu/app_chars.py>>
+        You can modify it to control which glyphs are used in termenu apps, since those glyphs
+        might not display properly on your terminal.
+        This could be helpful: CYAN<<http://xahlee.info/comp/unicode_geometric_shapes.html>>
+
+        ~/.termenu/app_chars.py:
+        ============={DEFAULT_CONFIG}=============
+
+        DARK_YELLOW<<(Hit ctrl-C or wait 30s to proceed...)>>
+
+        RED<<'*-~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~~~o~O~o~~~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~-*'>>
+        """).format(DEFAULT_CONFIG=DEFAULT_CONFIG)))
+    try:
+        time.sleep(30)
+    except KeyboardInterrupt:
+        pass
+
     os.makedirs(os.path.dirname(CFG_PATH), exist_ok=True)
     f = open(CFG_PATH, "w")
     f.write(DEFAULT_CONFIG)
@@ -75,9 +96,9 @@ class TermenuAdapter(termenu.Termenu):
     EMPTY = "DARK_RED<< (Empty) >>"
     SCROLL_UP_MARKER = APP_CHARS['SCROLL_UP_MARKER']
     SCROLL_DOWN_MARKER = APP_CHARS['SCROLL_DOWN_MARKER']
-    ACTIVE_MARKER = APP_CHARS['ACTIVE_MARKER']
-    SELECTED_MARKER = APP_CHARS['SELECTED_MARKER']
-    UNSELECTED_MARKER = APP_CHARS['UNSELECTED_MARKER']
+    ACTIVE_ITEM_MARKER = APP_CHARS['ACTIVE_ITEM_MARKER']
+    SELECTED_ITEM_MARKER = APP_CHARS['SELECTED_ITEM_MARKER']
+    SELECTABLE_ITEM_MARKER = APP_CHARS['SELECTABLE_ITEM_MARKER']
     CONTINUATION_SUFFIX = Colorized(APP_CHARS['CONTINUATION_SUFFIX'])
     CONTINUATION_PREFIX = Colorized(APP_CHARS['CONTINUATION_PREFIX'])
     TITLE_PAD = "  "
@@ -189,8 +210,8 @@ class TermenuAdapter(termenu.Termenu):
 
         # add selection / cursor decorations
         option = Colorized(
-            (" " if not markable else self.SELECTED_MARKER if selected else self.UNSELECTED_MARKER) +
-            (self.ACTIVE_MARKER if active else "  ") +
+            (" " if not markable else self.SELECTED_ITEM_MARKER if selected else self.SELECTABLE_ITEM_MARKER) +
+            (self.ACTIVE_ITEM_MARKER if active else "  ") +
             option)
         if highlighted:
             option = ansi.colorize(option.uncolored, "cyan", bright=True)

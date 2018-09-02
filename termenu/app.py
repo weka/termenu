@@ -26,11 +26,12 @@ NoneType = type(None)
 import os
 
 DEFAULT_CONFIG = """
-SCROLL_UP_MARKER = "🢁"
-SCROLL_DOWN_MARKER = "🢃"
-ACTIVE_ITEM_MARKER = " WHITE@{🞂}@"
-SELECTED_ITEM_MARKER = "WHITE@{⚫}@"
-SELECTABLE_ITEM_MARKER = "⚪"
+# This could be helpful: CYAN<<http://xahlee.info/comp/unicode_geometric_shapes.html>>
+SCROLL_UP_MARKER = "^"  # consider 🢁
+SCROLL_DOWN_MARKER = "V"  # consider 🢃
+ACTIVE_ITEM_MARKER = " WHITE@{>}@"  # consider 🞂
+SELECTED_ITEM_MARKER = "WHITE@{*}@"  # consider ⚫
+SELECTABLE_ITEM_MARKER = "-"  # consider ⚪
 CONTINUATION_SUFFIX = "DARK_RED@{↩}@"  # for when a line overflows
 CONTINUATION_PREFIX = "DARK_RED@{↪}@"  # for when a line overflows
 """
@@ -46,19 +47,18 @@ except FileNotFoundError:
         RED<<.-~~~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~~~-.>>
 
         WHITE<<termenu>> has created for you this default configuration file: CYAN<<~/.termenu/app_chars.py>>
-        You can modify it to control which glyphs are used in termenu apps, since those glyphs
-        might not display properly on your terminal.
-        This could be helpful: CYAN<<http://xahlee.info/comp/unicode_geometric_shapes.html>>
+        You can modify it to control which glyphs are used in termenu apps, to improve the readability
+        and usuability of these apps. This depends on the terminal you use.
 
         ~/.termenu/app_chars.py:
-        ============={DEFAULT_CONFIG}=============
+        ========================{DEFAULT_CONFIG}========================
 
-        DARK_YELLOW<<(Hit ctrl-C or wait 30s to proceed...)>>
+        DARK_YELLOW<<(Hit ctrl-C or wait 15s to proceed...)>>
 
         RED<<'*-~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~~~o~O~o~~~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~-*'>>
         """).format(DEFAULT_CONFIG=DEFAULT_CONFIG)))
     try:
-        time.sleep(30)
+        time.sleep(15)
     except KeyboardInterrupt:
         pass
 

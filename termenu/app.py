@@ -26,7 +26,11 @@ NoneType = type(None)
 import os
 
 DEFAULT_CONFIG = """
+# WHITE<<termenu>> has created for you this default configuration file.
+# You can modify it to control which glyphs are used in termenu apps, to improve the readability
+# and usuability of these apps. This depends on the terminal you use.
 # This could be helpful: CYAN<<http://xahlee.info/comp/unicode_geometric_shapes.html>>
+
 SCROLL_UP_MARKER = "^"  # consider 🢁
 SCROLL_DOWN_MARKER = "V"  # consider 🢃
 ACTIVE_ITEM_MARKER = " WHITE@{>}@"  # consider 🞂
@@ -42,30 +46,25 @@ try:
     with open(CFG_PATH) as f:
         app_chars = f.read()
 except FileNotFoundError:
-    os.system("clear")
-    print(Colorized(dedent("""
-        RED<<.-~~~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~~~-.>>
-
-        WHITE<<termenu>> has created for you this default configuration file: CYAN<<~/.termenu/app_chars.py>>
-        You can modify it to control which glyphs are used in termenu apps, to improve the readability
-        and usuability of these apps. This depends on the terminal you use.
-
-        ~/.termenu/app_chars.py:
-        ========================{DEFAULT_CONFIG}========================
-
-        DARK_YELLOW<<(Hit ctrl-C or wait 15s to proceed...)>>
-
-        RED<<'*-~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~~~o~O~o~~~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~-*'>>
-        """).format(DEFAULT_CONFIG=DEFAULT_CONFIG)))
-    try:
-        time.sleep(15)
-    except KeyboardInterrupt:
-        pass
-
     os.makedirs(os.path.dirname(CFG_PATH), exist_ok=True)
     f = open(CFG_PATH, "w")
     f.write(DEFAULT_CONFIG)
     app_chars = DEFAULT_CONFIG
+
+    os.system("clear")
+    print(Colorized(dedent("""
+
+        WHITE<<~/.termenu/app_chars.py:>>
+        RED<<.-~~~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~~~-.>>
+        {DEFAULT_CONFIG}
+        RED<<'*-~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~~~o~O~o~~~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~-*'>>
+        DARK_YELLOW<<(Hit any key to proceed...)>>""").format(DEFAULT_CONFIG=DEFAULT_CONFIG)), end="")
+
+    try:
+        next(keyboard.keyboard_listener())
+    except KeyboardInterrupt:
+        pass
+    print(Colorized("\rDARK_GREEN<<(Proceeding...)>>" + " " * 40))
 
 
 APP_CHARS = {}

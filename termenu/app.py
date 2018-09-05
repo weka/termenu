@@ -48,8 +48,9 @@ try:
         app_chars = f.read()
 except FileNotFoundError:
     os.makedirs(os.path.dirname(CFG_PATH), exist_ok=True)
-    f = open(CFG_PATH, "w")
-    f.write(DEFAULT_CONFIG)
+    with open(CFG_PATH, "w") as f:
+        f.write(DEFAULT_CONFIG)
+
     app_chars = DEFAULT_CONFIG
     if sys.__stdin__.isatty():
         os.system("clear")

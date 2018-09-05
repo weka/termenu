@@ -1,3 +1,4 @@
+import sys
 import re
 import time
 import functools
@@ -50,21 +51,21 @@ except FileNotFoundError:
     f = open(CFG_PATH, "w")
     f.write(DEFAULT_CONFIG)
     app_chars = DEFAULT_CONFIG
+    if sys.__stdin__.isatty():
+        os.system("clear")
+        print(Colorized(dedent("""
 
-    os.system("clear")
-    print(Colorized(dedent("""
+            WHITE<<~/.termenu/app_chars.py:>>
+            RED<<.-~~~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~~~-.>>
+            {DEFAULT_CONFIG}
+            RED<<'*-~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~~~o~O~o~~~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~-*'>>
+            DARK_YELLOW<<(Hit any key to proceed...)>>""").format(DEFAULT_CONFIG=DEFAULT_CONFIG)), end="")
 
-        WHITE<<~/.termenu/app_chars.py:>>
-        RED<<.-~~~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~~~-.>>
-        {DEFAULT_CONFIG}
-        RED<<'*-~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~~~o~O~o~~~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~-*'>>
-        DARK_YELLOW<<(Hit any key to proceed...)>>""").format(DEFAULT_CONFIG=DEFAULT_CONFIG)), end="")
-
-    try:
-        next(keyboard.keyboard_listener())
-    except KeyboardInterrupt:
-        pass
-    print(Colorized("\rDARK_GREEN<<(Proceeding...)>>" + " " * 40))
+        try:
+            next(keyboard.keyboard_listener())
+        except KeyboardInterrupt:
+            pass
+        print(Colorized("\rDARK_GREEN<<(Proceeding...)>>" + " " * 40))
 
 
 APP_CHARS = {}

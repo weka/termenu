@@ -42,31 +42,36 @@ CONTINUATION_PREFIX = "DARK_RED@{↪}@"  # for when a line overflows
 """
 
 CFG_PATH = os.path.expanduser("~/.termenu/app_chars.py")
+app_chars = DEFAULT_CONFIG
 
 try:
     with open(CFG_PATH) as f:
         app_chars = f.read()
+except PermissionError:
+    pass
 except FileNotFoundError:
-    os.makedirs(os.path.dirname(CFG_PATH), exist_ok=True)
-    with open(CFG_PATH, "w") as f:
-        f.write(DEFAULT_CONFIG)
+    try:
+        os.makedirs(os.path.dirname(CFG_PATH), exist_ok=True)
+        with open(CFG_PATH, "w") as f:
+            f.write(DEFAULT_CONFIG)
+    except PermissionError:
+        pass
+    else:
+        if sys.__stdin__.isatty():
+            os.system("clear")
+            print(Colorized(dedent("""
 
-    app_chars = DEFAULT_CONFIG
-    if sys.__stdin__.isatty():
-        os.system("clear")
-        print(Colorized(dedent("""
+                WHITE<<~/.termenu/app_chars.py:>>
+                RED<<.-~~~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~~~-.>>
+                {DEFAULT_CONFIG}
+                RED<<'*-~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~~~o~O~o~~~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~-*'>>
+                DARK_YELLOW<<(Hit any key to proceed...)>>""").format(DEFAULT_CONFIG=DEFAULT_CONFIG)), end="")
 
-            WHITE<<~/.termenu/app_chars.py:>>
-            RED<<.-~~~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~~~-.>>
-            {DEFAULT_CONFIG}
-            RED<<'*-~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~~~o~O~o~~~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~~~<>~~-*'>>
-            DARK_YELLOW<<(Hit any key to proceed...)>>""").format(DEFAULT_CONFIG=DEFAULT_CONFIG)), end="")
-
-        try:
-            next(keyboard.keyboard_listener())
-        except KeyboardInterrupt:
-            pass
-        print(Colorized("\rDARK_GREEN<<(Proceeding...)>>" + " " * 40))
+            try:
+                next(keyboard.keyboard_listener())
+            except KeyboardInterrupt:
+                pass
+            print(Colorized("\rDARK_GREEN<<(Proceeding...)>>" + " " * 40))
 
 
 APP_CHARS = {}

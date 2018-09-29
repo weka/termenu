@@ -5,7 +5,7 @@ import functools
 import signal
 from textwrap import dedent
 from . import termenu, keyboard
-from contextlib import contextmanager
+from contextlib import contextmanager, ExitStack
 from . import ansi
 from .colors import Colorized, uncolorize
 import collections
@@ -597,42 +597,43 @@ class AppMenu(object):
                     # next time we must refresh
                     self.refresh = "second"
 
-                try:
-                    selected = menu.show(default=default, auto_clear=not self.fullscreen)
-                    default = None  # default selection only on first show
-                except KeyboardInterrupt:
-                    self.quit()
-                except menu.RefreshSignal as e:
-                    self.refresh = e.source
-                    continue
-                except menu.HelpSignal:
-                    self.help()
-                    continue
-                except menu.TimeoutSignal:
-                    raise self.TimeoutSignal("Timed out waiting for selection")
-                except menu.SelectSignal as e:
-                    selected = e.selection
+                with ExitStack() as stack:
+                    self._all_titles.append(title)
+                    stack.callback(lambda: self._all_titles.pop(-1))
 
-                self._all_titles.append(title)
-                try:
-                    self.on_selected(selected)
-                except self.RetrySignal as e:
-                    self.refresh = e.refresh  # will refresh by default unless told differently
-                    selection = e.selection
-                    continue
-                except (KeyboardInterrupt):
-                    self.refresh = False  # show the same menu
-                    continue
-                except self.BackSignal as e:
-                    if e.levels:
-                        e.levels -= 1
-                        raise
-                    self.refresh = e.refresh
-                    continue
-                else:
-                    self.refresh = "second"   # refresh the menu
-                finally:
-                    self._all_titles.pop(-1)
+                    try:
+                        selected = menu.show(default=default, auto_clear=not self.fullscreen)
+                        default = None  # default selection only on first show
+                    except KeyboardInterrupt:
+                        self.quit()
+                    except menu.RefreshSignal as e:
+                        self.refresh = e.source
+                        continue
+                    except menu.HelpSignal:
+                        self.help()
+                        continue
+                    except menu.TimeoutSignal:
+                        raise self.TimeoutSignal("Timed out waiting for selection")
+                    except menu.SelectSignal as e:
+                        selected = e.selection
+
+                    try:
+                        self.on_selected(selected)
+                    except self.RetrySignal as e:
+                        self.refresh = e.refresh  # will refresh by default unless told differently
+                        selection = e.selection
+                        continue
+                    except (KeyboardInterrupt):
+                        self.refresh = False  # show the same menu
+                        continue
+                    except self.BackSignal as e:
+                        if e.levels:
+                            e.levels -= 1
+                            raise
+                        self.refresh = e.refresh
+                        continue
+                    else:
+                        self.refresh = "second"   # refresh the menu
 
         except (self.QuitSignal, self.BackSignal):
             if self.parent:

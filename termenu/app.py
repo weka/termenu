@@ -533,6 +533,13 @@ class AppMenu(object):
     def update_data(self):
         pass
 
+    @contextmanager
+    def showing(self):
+        """
+        Allow subclasses to run something before and after the menu is shown
+        """
+        yield
+
     def help(self):
         lines = [
             "WHITE@{Menu Usage:}@",
@@ -602,7 +609,8 @@ class AppMenu(object):
                     stack.callback(lambda: self._all_titles.pop(-1))
 
                     try:
-                        selected = menu.show(default=default, auto_clear=not self.fullscreen)
+                        with self.showing():
+                            selected = menu.show(default=default, auto_clear=not self.fullscreen)
                         default = None  # default selection only on first show
                     except KeyboardInterrupt:
                         self.quit()

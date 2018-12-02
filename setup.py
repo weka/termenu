@@ -16,8 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with termenu.  If not, see <http://www.gnu.org/licenses/>.
 
-from distutils.core import setup
-from version import version
+from setuptools import setup
+from os import path
 
 DESCRIPTION = """
 Termenu is a command line utility and Python library for displaying console
@@ -28,6 +28,8 @@ command line utilities such as grep, sed and awk and full screen interactive
 applications such as Midnight Commander. Termenu aims to bridge this gap and
 allow a modicum of interactivity in regular command line utilities.
 """
+
+version = open(path.join(path.dirname(path.abspath(__file__)), 'version'), 'r').read().strip()
 
 setup(
     name='termenu',
@@ -40,7 +42,6 @@ setup(
     url='https://github.com/gooli/termenu',
     package_dir={'termenu':'.'},
     packages=['termenu'],
-    scripts=['termenu'],
     classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Environment :: Console',
@@ -52,4 +53,3 @@ setup(
         'Topic :: Terminals'
     ]
 )
-

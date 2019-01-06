@@ -137,7 +137,9 @@ class TermenuAdapter(termenu.Termenu):
         self.app = app
 
     def handle_termsize_change(self, signal, frame):
-        self.refresh("signal")
+        import threading
+        if threading.current_thread() == threading.main_thread():
+            self.refresh("signal")
 
     @property
     def filter_mode(self):

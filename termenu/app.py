@@ -54,7 +54,7 @@ except FileNotFoundError:
         os.makedirs(os.path.dirname(CFG_PATH), exist_ok=True)
         with open(CFG_PATH, "w") as f:
             f.write(DEFAULT_CONFIG)
-    except PermissionError:
+    except (OSError, PermissionError):
         pass
     else:
         if sys.__stdin__.isatty():

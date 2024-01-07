@@ -9,7 +9,7 @@ This example shows how you could implement a menu for data that is loading slowl
 for instance over a network or as a result of some processing.
 """
 
-class AutoloadingList(object):
+class AutoloadingList:
     def __init__(self, iter):
         self._iter = iter
         self._list = []
@@ -53,7 +53,7 @@ class TitleCounterPlugin(termenu.TitlePlugin):
 
     def _print_menu(self):
         self.title = "Showing %d options" % len(self.host.options)
-        return super(TitleCounterPlugin, self)._print_menu()
+        return super()._print_menu()
 
 def data(size):
     for i in range(size):

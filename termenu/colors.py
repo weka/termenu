@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
 
 import re
 from . import ansi
@@ -9,23 +8,23 @@ colorizers_cache = {}
 
 
 _RE_COLOR_SPEC = re.compile(
-    "([\w]+)(?:\((.*)\))?"        # 'red', 'red(white)'
+    r"([\w]+)(?:\((.*)\))?"        # 'red', 'red(white)'
     )
 
 _RE_COLOR = re.compile(           # 'RED<<text>>', 'RED(WHITE)<<text>>', 'RED@{text}@'
     r"(?ms)"                      # flags: mutliline/dot-all
     "([A-Z_]+"                    # foreground color
-            "(?:\([^\)]+\))?"     # optional background color
-        "(?:(?:\<\<).*?(?:\>\>)"  # text string inside <<...>>
+            r"(?:\([^\)]+\))?"     # optional background color
+        r"(?:(?:\<\<).*?(?:\>\>)"  # text string inside <<...>>
             "|"
-        "(?:\@\{).*?(?:\}\@)))"   # text string inside @{...}@
+        r"(?:\@\{).*?(?:\}\@)))"   # text string inside @{...}@
     )
 
 _RE_COLORING = re.compile(
     # 'RED', 'RED(WHITE)'
     r"(?ms)"
-    "([A-Z_]+(?:\([^\)]+\))?)"       # foreground color and optional background color
-    "((?:\<\<.*?\>\>|\@\{.*?\}\@))"  # text string inside either <<...>> or @{...}@
+    r"([A-Z_]+(?:\([^\)]+\))?)"       # foreground color and optional background color
+    r"((?:\<\<.*?\>\>|\@\{.*?\}\@))"  # text string inside either <<...>> or @{...}@
     )
 
 

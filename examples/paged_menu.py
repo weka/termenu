@@ -7,7 +7,7 @@ This example shows how you could implement a menu for a very long (or endless)
 list of options.
 """
 
-class IteratorList(object):
+class IteratorList:
     def __init__(self, iter):
         self._iter = iter
         self._list = []

@@ -17,8 +17,7 @@ if sys.platform == "darwin":
             if start > last_end:
                 chunk = s[last_end:start]
                 yield chunk
-            for c in s[start:end]:
-                yield c
+            yield from s[start:end]
             last_end = end
 
         remainder = s[end:]
@@ -50,7 +49,7 @@ def write(text):
         while attempts:
             try:
                 func(*args)
-            except IOError as e:
+            except OSError as e:
                 if e.errno != errno.EAGAIN:
                     raise
                 attempts -= 1
@@ -114,7 +113,7 @@ def highlight(string, background):
     stopcmd = "\x1b[m"
     return bkcmd + string.replace(stopcmd, stopcmd + bkcmd) + stopcmd
 
-ANSI_COLOR_REGEX = "\x1b\[(\d+)?(;\d+)*;?m"
+ANSI_COLOR_REGEX = "\x1b\\[(\\d+)?(;\\d+)*;?m"
 
 def decolorize(string):
     return re.sub(ANSI_COLOR_REGEX, "", string)

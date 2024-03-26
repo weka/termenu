@@ -42,7 +42,7 @@ class TopMenu(AppMenu):
             return ", ".join(map(str, sorted(selection)))
         def MinMax(self, numbers):
             "Min/Max"
-            input("Min: %s, Max: %s" % (min(numbers), max(numbers)))
+            input(f"Min: {min(numbers)}, Max: {max(numbers)}")
             self.retry()
         def Add(self, numbers):
             input("Sum: %s" % sum(numbers))

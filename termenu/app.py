@@ -95,7 +95,7 @@ class TermenuAdapter(termenu.Termenu):
 
     class _Option(termenu.Termenu._Option):
         def __init__(self, *args, **kwargs):
-            super(TermenuAdapter._Option, self).__init__(*args, **kwargs)
+            super().__init__(*args, **kwargs)
             self.raw = self.text
             self.text = Colorized(self.raw)
             self.filter_text = (self.attrs.get('filter_text') or self.text.uncolored).lower()
@@ -175,10 +175,10 @@ class TermenuAdapter(termenu.Termenu):
         self.title = Colorized("\n".join(self.TITLE_PAD + l for l in title_lines))
         height -= self.title_height
         with self._selection_preserved(selection):
-            super(TermenuAdapter, self).__init__(*args, height=height, **kwargs)
+            super().__init__(*args, height=height, **kwargs)
 
     def _make_option_objects(self, options):
-        options = super(TermenuAdapter, self)._make_option_objects(options)
+        options = super()._make_option_objects(options)
         for opt in options:
             opt.menu = self
         self._allOptions = options[:]
@@ -221,7 +221,7 @@ class TermenuAdapter(termenu.Termenu):
             return
 
         prev_active = self._get_active_option().result
-        prev_selected = set(o.result for o in self._allOptions if o.selected) if selection is None else set(selection)
+        prev_selected = {o.result for o in self._allOptions if o.selected} if selection is None else set(selection)
         try:
             yield
         finally:
@@ -236,7 +236,7 @@ class TermenuAdapter(termenu.Termenu):
         self._set_default(default)
         orig_handler = signal.signal(signal.SIGWINCH, self.handle_termsize_change)
         try:
-            return super(TermenuAdapter, self).show(auto_clear=auto_clear)
+            return super().show(auto_clear=auto_clear)
         finally:
             signal.signal(signal.SIGWINCH, orig_handler)
 
@@ -313,7 +313,7 @@ class TermenuAdapter(termenu.Termenu):
             bubble_up = False
 
         if bubble_up:
-            return super(TermenuAdapter, self)._on_key(key)
+            return super()._on_key(key)
 
     def _on_F5(self):
         self.refresh('user')
@@ -372,13 +372,13 @@ class TermenuAdapter(termenu.Termenu):
             if mode == "and":
                 ansi.write("%s " % mode_mark)
             else:
-                ansi.write("(%s) %s " % (mode, mode_mark))
+                ansi.write(f"({mode}) {mode_mark} ")
             ansi.write(ansi.colorize(" , ", "white", bright=True).join(filters))
             ansi.show_cursor()
 
     def _print_menu(self):
         ansi.write("\r%s\n" % self.title)
-        super(TermenuAdapter, self)._print_menu()
+        super()._print_menu()
         for _ in range(0, self.height - len(self.options)):
             ansi.clear_eol()
             ansi.write("\n")
@@ -387,7 +387,7 @@ class TermenuAdapter(termenu.Termenu):
         ansi.clear_eol()
 
     def _goto_top(self):
-        super(TermenuAdapter, self)._goto_top()
+        super()._goto_top()
         ansi.up(self.title_height)
 
     def get_total_height(self):
@@ -396,7 +396,7 @@ class TermenuAdapter(termenu.Termenu):
                 )
 
     def _clear_menu(self):
-        super(TermenuAdapter, self)._clear_menu()
+        super()._clear_menu()
         clear = getattr(self, "clear", True)
         ansi.restore_position()
         height = self.get_total_height()
@@ -447,7 +447,7 @@ def _get_option_name(sub):
     return sub.__doc__ or sub.__name__
 
 
-class AppMenu(object):
+class AppMenu:
 
     class _MenuSignal(ParamsException): pass
     class RetrySignal(_MenuSignal): pass
@@ -568,9 +568,9 @@ class AppMenu(object):
                         ansi.clear_screen()
                         ansi.home()
                     title = self.title
-                    titles = [t() if isinstance(t, collections.Callable) else t for t in self._all_titles + [title]]
+                    titles = [t() if isinstance(t, collections.abc.Callable) else t for t in self._all_titles + [title]]
                     banner = self.banner
-                    if isinstance(banner, collections.Callable):
+                    if isinstance(banner, collections.abc.Callable):
                         banner = banner()
                     options = list(self.items)
                     if not options:
@@ -646,7 +646,7 @@ class AppMenu(object):
                 # we don't want the instance of the class to be returned
                 # as the a result from the menu. (See 'HitMe' class below)
                 item, _ = None, item()
-            if isinstance(item, collections.Callable):
+            if isinstance(item, collections.abc.Callable):
                 item = item()
             if isinstance(item, self._MenuSignal):
                 raise item
@@ -663,7 +663,7 @@ class AppMenu(object):
 
         if isinstance(actions, (list, tuple)):
             to_submenu = lambda action: (_get_option_name(action), functools.partial(action, selected))
-            actions = [action if isinstance(action, collections.Callable) else getattr(self, action) for action in actions]
+            actions = [action if isinstance(action, collections.abc.Callable) else getattr(self, action) for action in actions]
             ret = self.show(title=self.get_selection_title(selected), options=list(map(to_submenu, actions)))
         else:
             if actions is None:

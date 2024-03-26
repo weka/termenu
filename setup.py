@@ -29,7 +29,7 @@ applications such as Midnight Commander. Termenu aims to bridge this gap and
 allow a modicum of interactivity in regular command line utilities.
 """
 
-version = open(path.join(path.dirname(path.abspath(__file__)), 'version'), 'r').read().strip()
+version = open(path.join(path.dirname(path.abspath(__file__)), 'version')).read().strip()
 
 setup(
     name='termenu',
@@ -39,8 +39,7 @@ setup(
     author='Eli Finer',
     license='GPL',
     author_email='eli.finer@gmail.com',
-    url='https://github.com/gooli/termenu',
-    package_dir={'termenu':'.'},
+    url='https://github.com/weka/termenu',
     packages=['termenu'],
     classifiers=[
         'Development Status :: 5 - Production/Stable',
@@ -50,6 +49,7 @@ setup(
         'Natural Language :: English',
         'Operating System :: POSIX',
         'Programming Language :: Python',
+        'Programming Language :: Python :: 3.11',
         'Topic :: Terminals'
     ]
 )

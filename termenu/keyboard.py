@@ -1,4 +1,3 @@
-
 import os
 import sys
 import fcntl
@@ -92,7 +91,7 @@ except FileNotFoundError:
 for c in string.ascii_lowercase:
     ANSI_SEQUENCES['ctrl_%s' % c] = chr(ord(c) - ord('a')+1)
 
-KEY_NAMES = dict((v,k) for k,v in list(ANSI_SEQUENCES.items()))
+KEY_NAMES = {v:k for k,v in list(ANSI_SEQUENCES.items())}
 KEY_NAMES.update({
     '\x1b' : 'esc',
     '\n' : 'enter',
@@ -101,7 +100,7 @@ KEY_NAMES.update({
 })
 
 
-class RawTerminal(object):
+class RawTerminal:
     def __init__(self, blocking=True):
         self._blocking = blocking
         self._opened = 0
@@ -181,7 +180,7 @@ def keyboard_listener(heartbeat=None, terminal=None):
                     sequence += terminal.get()
                 except EOFError:
                     break
-                except IOError as e:
+                except OSError as e:
                     if e.errno == errno.EAGAIN:
                         break
 

@@ -1,5 +1,3 @@
-
-
 import sys
 from .version import version
 from . import keyboard, ansi
@@ -65,7 +63,7 @@ def register_plugin(host, plugin):
     Register a plugin with a host object. Some @pluggable methods in the host
     will have their behaviour altered by the plugin.
     """
-    class OriginalMethods(object):
+    class OriginalMethods:
         def __getattr__(self, name):
             return lambda *args, **kwargs: getattr(host, name).original(host, *args, **kwargs)
     if not hasattr(host, "_plugins"):
@@ -75,17 +73,17 @@ def register_plugin(host, plugin):
     host._plugins.append(plugin)
 
 
-class Plugin(object):
+class Plugin:
     def __getattr__(self, name):
         # allow calls to fall through to parent plugins if a method isn't defined
         return getattr(self.parent, name)
 
 
-class Termenu(object):
+class Termenu:
 
     terminal = keyboard.RawTerminal(blocking=False)
 
-    class _Option(object):
+    class _Option:
         def __init__(self, option, **attrs):
             self.selected = False
             self.attrs = attrs
@@ -402,7 +400,7 @@ class FilterPlugin(Plugin):
                 break
 
 
-class OptionGroup(object):
+class OptionGroup:
     def __init__(self, header, options):
         self.header = header
         self.options = options
@@ -522,7 +520,7 @@ class TitlePlugin(Plugin):
         ansi.clear_eol()
 
 
-class Minimenu(object):
+class Minimenu:
     def __init__(self, options, default=None):
         self.options = options
         try:
